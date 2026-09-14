@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://YOUR-API-URL.com";
+const API_BASE_URL = "https://linthu44045479-dc4.workers.dev";
 
 async function callAPI(endpoint, data) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
