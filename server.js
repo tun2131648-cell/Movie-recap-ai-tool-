@@ -1,7 +1,6 @@
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
-const fs = require("fs");
 
 const app = express();
 
@@ -16,7 +15,7 @@ app.get("/", (req, res) => {
   res.send("Movie Recap AI Server is running!");
 });
 
-app.post("/upload", upload.single("video"), async (req, res) => {
+app.post("/upload", upload.single("video"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       error: "Video file မရပါ"
@@ -32,4 +31,8 @@ app.post("/upload", upload.single("video"), async (req, res) => {
   });
 });
 
-const PORT = process.env.PORT ||
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
