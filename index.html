@@ -1,3 +1,4 @@
+<script>
 async function uploadVideo() {
   const file = document.getElementById("videoFile").files[0];
   const status = document.getElementById("status");
@@ -28,9 +29,9 @@ async function uploadVideo() {
     } else {
       status.innerText = "❌ " + (data.error || "Upload failed");
     }
-
   } catch (error) {
     status.innerText = "❌ Server ချိတ်ဆက်မရပါ";
     console.error(error);
   }
 }
+</script>
