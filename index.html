@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Movie Recap AI</title>
 
 <style>
@@ -121,4 +120,36 @@ button:disabled {
 
 <div class="container">
 
-<h1>🎬 Movie Recap AI
+<h1>🎬 Movie Recap AI</h1>
+
+<div class="subtitle">
+Video တင်ပြီး Recap MP4 ရယူပါ
+</div>
+
+<div class="box">
+
+<input
+  type="file"
+  id="videoFile"
+  accept="video/*"
+>
+
+<video
+  id="preview"
+  controls>
+</video>
+
+<button
+  id="uploadButton"
+  type="button">
+🎬 Generate Recap
+</button>
+
+<div id="status"></div>
+
+<div id="processing">
+
+<div class="progress-box">
+<div
+  class="progress-bar"
+  id="progress
