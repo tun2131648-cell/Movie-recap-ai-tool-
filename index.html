@@ -1,124 +1,247 @@
 <!DOCTYPE html>
 <html lang="my">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Recap AI</title>
 
-  <title>Movie Recap AI</title>
+<style>
+* {
+  box-sizing: border-box;
+}
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+body {
+  margin: 0;
+  background: #0b0d12;
+  color: white;
+  font-family: Arial, sans-serif;
+}
 
-    body {
-      margin: 0;
-      background: #0b0d12;
-      color: white;
-      font-family: Arial, sans-serif;
-    }
+.container {
+  max-width: 600px;
+  margin: auto;
+  padding: 30px 20px;
+}
 
-    .container {
-      max-width: 600px;
-      margin: auto;
-      padding: 30px 20px;
-    }
+h1 {
+  text-align: center;
+}
 
-    h1 {
-      text-align: center;
-      margin-bottom: 8px;
-    }
+.subtitle {
+  text-align: center;
+  color: #999;
+  margin-bottom: 25px;
+}
 
-    .subtitle {
-      text-align: center;
-      color: #999;
-      margin-bottom: 25px;
-    }
+.box {
+  background: #151821;
+  padding: 20px;
+  border-radius: 16px;
+}
 
-    .box {
-      background: #151821;
-      padding: 20px;
-      border-radius: 16px;
-    }
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  background: #222630;
+  color: white;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
 
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 20px;
-      background: #222630;
-      color: white;
-      border: 1px solid #333;
-      border-radius: 8px;
-    }
+video {
+  width: 100%;
+  max-height: 350px;
+  border-radius: 12px;
+  background: black;
+  display: none;
+  margin-bottom: 20px;
+}
 
-    video {
-      width: 100%;
-      max-height: 350px;
-      border-radius: 12px;
-      background: black;
-      display: none;
-      margin-bottom: 20px;
-    }
+button {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  background: #5865f2;
+  color: white;
+  font-size: 17px;
+  font-weight: bold;
+}
 
-    button {
-      width: 100%;
-      padding: 15px;
-      border: none;
-      border-radius: 10px;
-      background: #5865f2;
-      color: white;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+#status {
+  text-align: center;
+  margin-top: 20px;
+}
 
-    button:disabled {
-      opacity: 0.5;
-    }
+#processing {
+  display: none;
+  margin-top: 25px;
+}
 
-    #status {
-      text-align: center;
-      margin-top: 20px;
-      color: #ddd;
-    }
+.processing-title {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
 
-    #processing {
-      display: none;
-      margin-top: 25px;
-    }
+.progress-box {
+  width: 100%;
+  height: 14px;
+  background: #292d38;
+  border-radius: 20px;
+  overflow: hidden;
+}
 
-    .processing-title {
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 15px;
-    }
+.progress-bar {
+  width: 0%;
+  height: 100%;
+  background: #5865f2;
+  transition: width 0.3s;
+}
 
-    .progress-box {
-      width: 100%;
-      height: 14px;
-      background: #292d38;
-      border-radius: 20px;
-      overflow: hidden;
-    }
+#percent {
+  text-align: center;
+  margin-top: 10px;
+  color: #aaa;
+}
 
-    .progress-bar {
-      width: 0%;
-      height: 100%;
-      background: #5865f2;
-      border-radius: 20px;
-      transition: width 0.5s ease;
-    }
+.loading {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 20px;
+}
+</style>
+</head>
 
-    #percent {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 14px;
-      color: #aaa;
-    }
+<body>
 
-    .loading {
-      display: flex;
-      justify-content: center;
-      gap: 5px;
-      margin-top
+<div class="container">
+
+<h1>🎬 Movie Recap AI</h1>
+
+<div class="subtitle">
+Video တင်ပြီး AI Recap ပြုလုပ်ပါ
+</div>
+
+<div class="box">
+
+<input
+  type="file"
+  id="videoFile"
+  accept="video/*"
+>
+
+<video
+  id="preview"
+  controls>
+</video>
+
+<button
+  id="uploadButton"
+  onclick="uploadVideo()">
+🎬 Generate Recap
+</button>
+
+<div id="status"></div>
+
+<div id="processing">
+
+<div class="processing-title">
+🎬 Video Processing...
+</div>
+
+<div class="progress-box">
+<div
+  class="progress-bar"
+  id="progressBar">
+</div>
+</div>
+
+<div id="percent">0%</div>
+
+<div class="loading">
+● ● ●
+</div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+// Video Preview
+document
+.getElementById("videoFile")
+.addEventListener("change", function() {
+
+  const file = this.files[0];
+
+  const preview =
+    document.getElementById("preview");
+
+  const status =
+    document.getElementById("status");
+
+  if (!file) {
+    preview.style.display = "none";
+    return;
+  }
+
+  preview.src =
+    URL.createObjectURL(file);
+
+  preview.style.display = "block";
+
+  status.innerText =
+    "✅ Video ရွေးပြီးပါပြီ";
+
+});
+
+
+// Upload Video
+async function uploadVideo() {
+
+  const file =
+    document.getElementById("videoFile").files[0];
+
+  const status =
+    document.getElementById("status");
+
+  const button =
+    document.getElementById("uploadButton");
+
+  const processing =
+    document.getElementById("processing");
+
+  const progressBar =
+    document.getElementById("progressBar");
+
+  const percent =
+    document.getElementById("percent");
+
+
+  if (!file) {
+
+    status.innerText =
+      "⚠️ Video တစ်ခုရွေးပါ";
+
+    return;
+  }
+
+
+  button.disabled = true;
+
+  processing.style.display = "block";
+
+  status.innerText =
+    "⏳ Video ကို Server ဆီပို့နေပါတယ်...";
+
+
+  let progress = 0;
+
+  const timer = setInterval(function() {
+
+    if (progress < 
