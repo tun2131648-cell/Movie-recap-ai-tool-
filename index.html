@@ -1,17 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="my">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Movie Recap AI</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Recap AI</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#0b0d12;
+  color:white;
+}
+.container{
+  max-width:600px;
+  margin:auto;
+  padding:25px 18px;
+}
+.logo{
+  text-align:center;
+  font-size:30px;
+  font-weight:bold;
+  margin:20px 0 8px;
+}
+.logo span{color:#8b5cf6}
+.sub{
+  text-align:center;
+  color:#9ca3af;
+  margin-bottom:30px;
+}
+.card{
+  background:#151821;
+  border:1px solid #292e3a;
+  border-radius:18px;
+  padding:20px;
+}
+.upload{
+  border:2px dashed #555d70;
+  border-radius:15px;
+  padding:35px 15px;
+  text-align:center;
+}
+.upload-icon{font-size:45px}
+input{display:none}
+.upload label{
+  display:inline-block;
+  background:#7c3aed;
+  padding:13px 22px;
+  border-radius:10px;
+  margin-top:15px;
+  font-weight:bold;
+}
+.file-name{
+  color:#a78bfa;
+  margin-top:15px;
+  word-break:break-all;
+}
+button{
+  width:100%;
+  border:0;
+  border-radius:12px;
+  padding:15px;
+  margin-top:20px;
+  background:#7c3aed;
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+}
+button:active{transform:scale(.98)}
+.info{
+  margin-top:25px;
+  color:#9ca3af;
+  font-size:14px;
+  line-height:1.7;
+}
+</style>
 </head>
+
 <body>
-  <h1>🎬 Movie Recap AI</h1>
-  <p>Upload your video and create a recap.</p>
 
-  <input type="file" accept="video/*">
+<div class="container">
 
-  <br><br>
+  <div class="logo">🎬 Movie <span>Recap AI</span></div>
 
-  <button>✨ Generate Recap</button>
+  <div class="sub">
+    AI Movie Recap Generator
+  </div>
+
+  <div class="card">
+
+    <div class="upload">
+
+      <div class="upload-icon">🎥</div>
+
+      <h3>Upload Video</h3>
+
+      <p style="color:#9ca3af">
+        ကိုယ်ပိုင် / ခွင့်ပြုထားသော video ကို upload လုပ်ပါ
+      </p>
+
+      <input type="file" id="video" accept="video/*">
+
+      <label for="video">📁 Choose Video</label>
+
+      <div class="file-name" id="fileName">
+        No video selected
+      </div>
+
+    </div>
+
+    <button onclick="generateRecap()">
+      ✨ Generate Recap
+    </button>
+
+    <div class="info">
+      🧠 AI က video ကို analyze လုပ်ပြီး<br>
+      🇲🇲 မြန်မာလို recap script ထုတ်ပေးမယ့် system ကို
+      နောက်တစ်ဆင့်မှာ ချိတ်ဆက်မယ်။
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const video = document.getElementById("video");
+const fileName = document.getElementById("fileName");
+
+video.addEventListener("change", function(){
+  if(this.files.length > 0){
+    fileName.textContent = "✅ " + this.files[0].name;
+  }
+});
+
+function generateRecap(){
+  if(video.files.length === 0){
+    alert("အရင်ဆုံး Video တစ်ခုရွေးပါ 🎥");
+    return;
+  }
+
+  alert("Video ရွေးပြီးပါပြီ ✅\nAI Recap system ကို နောက်တစ်ဆင့်မှာ ချိတ်ဆက်မယ်။");
+}
+</script>
+
 </body>
 </html>
