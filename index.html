@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Movie Recap AI</title>
 
   <style>
@@ -12,53 +13,71 @@
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
       background: #0b0d12;
       color: white;
-      text-align: center;
+      font-family: Arial, sans-serif;
     }
 
     .container {
       max-width: 600px;
       margin: auto;
-      padding: 40px 20px;
+      padding: 30px 20px;
     }
 
     h1 {
+      text-align: center;
       margin-bottom: 10px;
     }
 
-    p {
+    .subtitle {
+      text-align: center;
       color: #aaa;
+      margin-bottom: 25px;
+    }
+
+    .box {
+      background: #151821;
+      padding: 20px;
+      border-radius: 15px;
     }
 
     input {
       width: 100%;
-      margin: 25px 0;
       padding: 12px;
-      background: #181b22;
+      margin-bottom: 20px;
+      background: #222630;
       color: white;
+      border: 1px solid #333;
       border-radius: 8px;
+    }
+
+    video {
+      width: 100%;
+      max-height: 350px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      background: black;
+      display: none;
     }
 
     button {
       width: 100%;
       padding: 15px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       background: #5865f2;
       color: white;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: bold;
-      cursor: pointer;
     }
 
-    button:active {
-      opacity: 0.8;
+    button:disabled {
+      opacity: 0.5;
     }
 
     #status {
-      margin-top: 25px;
+      text-align: center;
+      margin-top: 20px;
       line-height: 1.6;
     }
   </style>
@@ -67,56 +86,69 @@
 <body>
 
   <div class="container">
+
     <h1>🎬 Movie Recap AI</h1>
-    <p>Video တင်ပြီး AI Recap ပြုလုပ်ပါ</p>
 
-    <input type="file" id="videoFile" accept="video/*">
+    <div class="subtitle">
+      Video တင်ပြီး AI Recap ပြုလုပ်ပါ
+    </div>
 
-    <button onclick="uploadVideo()">
-      Generate Recap
-    </button>
+    <div class="box">
 
-    <div id="status"></div>
+      <input
+        type="file"
+        id="videoFile"
+        accept="video/*"
+      >
+
+      <video
+        id="preview"
+        controls
+      ></video>
+
+      <button
+        id="uploadButton"
+        onclick="uploadVideo()"
+      >
+        🎬 Generate Recap
+      </button>
+
+      <div id="status"></div>
+
+    </div>
+
   </div>
 
+
   <script>
-    async function uploadVideo() {
-      const file = document.getElementById("videoFile").files[0];
+
+    // Video ရွေးတဲ့အခါ Preview ပြမယ်
+    document.getElementById("videoFile").addEventListener("change", function () {
+
+      const file = this.files[0];
+      const preview = document.getElementById("preview");
       const status = document.getElementById("status");
 
       if (!file) {
-        status.innerText = "⚠️ Video တစ်ခုရွေးပါ";
+        preview.style.display = "none";
         return;
       }
 
-      status.innerText = "⏳ Server ကိုပို့နေပါတယ်...";
+      const videoURL = URL.createObjectURL(file);
 
-      const formData = new FormData();
-      formData.append("video", file);
+      preview.src = videoURL;
+      preview.style.display = "block";
 
-      try {
-        const response = await fetch(
-          "https://movie-recap-ai-tool.onrender.com/upload",
-          {
-            method: "POST",
-            body: formData
-          }
-        );
+      status.innerText = "✅ Video ရွေးပြီးပါပြီ";
 
-        const data = await response.json();
+    });
 
-        if (response.ok) {
-          status.innerText = "✅ Video Server ကိုရောက်ပါပြီ!";
-        } else {
-          status.innerText = "❌ " + (data.error || "Upload failed");
-        }
 
-      } catch (error) {
-        status.innerText = "❌ Server ချိတ်ဆက်မရပါ";
-        console.error(error);
-      }
-    }
-  </script>
+    // Video ကို Render Server ဆီ Upload လုပ်မယ်
+    async function uploadVideo() {
 
-</body>
-</html>
+      const fileInput = document.getElementById("videoFile");
+      const status = document.getElementById("status");
+      const button = document.getElementById("uploadButton");
+
+      const file = fileInput.files[0
