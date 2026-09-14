@@ -25,15 +25,19 @@ const upload = multer({
   }
 });
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
-});
+const apiKey = process.env.GEMINI_API_KEY;
 
+if (!apiKey) {
+  console.error("GEMINI_API_KEY is missing");
+}
+
+const ai = new GoogleGenAI({
+  apiKey: apiKey
+});
 
 app.get("/", (req, res) => {
   res.send("Movie Recap AI Server is running!");
 });
-
 
 app.post(
   "/upload",
@@ -43,6 +47,12 @@ app.post(
     let inputFile = null;
 
     try {
+
+      if (!apiKey) {
+        throw new Error(
+          "GEMINI_API_KEY မတွေ့ပါ"
+        );
+      }
 
       if (!req.file) {
         return res.status(400).json({
@@ -62,8 +72,7 @@ app.post(
         "Uploading video to Gemini..."
       );
 
-
-      let videoFile =
+      const uploadedFile =
         await ai.files.upload({
           file: inputFile,
           config: {
@@ -72,19 +81,19 @@ app.post(
           }
         });
 
-
       console.log(
-        "Gemini file:",
-        videoFile.name
+        "Gemini upload complete:",
+        uploadedFile.name
       );
 
+      let videoFile = uploadedFile;
 
       while (
         videoFile.state === "PROCESSING"
       ) {
 
         console.log(
-          "Gemini processing..."
+          "Waiting for Gemini..."
         );
 
         await new Promise(
@@ -98,7 +107,6 @@ app.post(
           });
       }
 
-
       if (
         videoFile.state === "FAILED"
       ) {
@@ -107,97 +115,53 @@ app.post(
         );
       }
 
-
       console.log(
-        "Video is ready."
+        "Video ready."
       );
 
+      const response =
+        await ai.models.generateContent({
 
-      console.log(
-        "Asking Gemini about video..."
-      );
+          model: "gemini-2.5-flash",
 
-
-      const interaction =
-        await ai.interactions.create({
-
-          model: "gemini-3.8-flash",
-
-          input: [
-
+          contents: [
             {
-              type: "video",
-
-              uri:
-                videoFile.uri,
-
-              mime_type:
-                videoFile.mimeType,
-
-              processing: "static"
+              fileData: {
+                fileUri: videoFile.uri,
+                mimeType: videoFile.mimeType
+              }
             },
-
             {
-              type: "text",
-
               text: `
-Analyze this video carefully.
+ဒီ video ကို သေချာကြည့်ပါ။
 
-Tell me what happens in the video
-and describe the spoken dialogue or
-important story content.
+Video ထဲမှာ ဘာတွေဖြစ်နေသလဲ
+မြန်မာဘာသာနဲ့ ရှင်းပြပါ။
 
-Return the answer in Burmese Myanmar language.
-
-Keep the answer clear and concise.
+အရေးကြီးတဲ့အကြောင်းအရာတွေကို
+တိုတိုနဲ့ ရှင်းရှင်းလင်းလင်းရေးပါ။
               `
             }
-
           ]
-
         });
 
-
-      const result =
-        interaction.output_text;
-
+      const result = response.text;
 
       if (!result) {
         throw new Error(
-          "Gemini က စာပြန်မပေးပါ"
+          "Gemini response မရပါ"
         );
       }
 
-
       console.log(
-        "Gemini response received."
-      );
-
-
-      console.log(
+        "Gemini result:",
         result
       );
 
-
-      if (
-        inputFile &&
-        fs.existsSync(inputFile)
-      ) {
-        fs.unlinkSync(inputFile);
-      }
-
-
       res.json({
-
         success: true,
-
-        message:
-          "Gemini video test အောင်မြင်ပါပြီ",
-
         result: result
-
       });
-
 
     } catch (error) {
 
@@ -206,6 +170,14 @@ Keep the answer clear and concise.
         error
       );
 
+      res.status(500).json({
+        success: false,
+        error:
+          error.message ||
+          "Gemini processing မအောင်မြင်ပါ"
+      });
+
+    } finally {
 
       if (
         inputFile &&
@@ -214,31 +186,16 @@ Keep the answer clear and concise.
         fs.unlinkSync(inputFile);
       }
 
-
-      res.status(500).json({
-
-        success: false,
-
-        error:
-          error.message ||
-          "Gemini processing မအောင်မြင်ပါ"
-
-      });
-
     }
-
   }
 );
-
 
 app.listen(
   PORT,
   "0.0.0.0",
   () => {
-
     console.log(
       `Server running on port ${PORT}`
     );
-
   }
 );
