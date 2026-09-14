@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Movie Recap AI</title>
 
 <style>
@@ -67,6 +68,10 @@ button {
   color: white;
   font-size: 17px;
   font-weight: bold;
+}
+
+button:disabled {
+  opacity: 0.6;
 }
 
 #status {
@@ -172,7 +177,6 @@ Video တင်ပြီး AI Recap ပြုလုပ်ပါ
 
 <script>
 
-// Video Preview
 document
 .getElementById("videoFile")
 .addEventListener("change", function() {
@@ -201,7 +205,6 @@ document
 });
 
 
-// Upload Video
 async function uploadVideo() {
 
   const file =
@@ -244,4 +247,4 @@ async function uploadVideo() {
 
   const timer = setInterval(function() {
 
-    if (progress < 
+   
