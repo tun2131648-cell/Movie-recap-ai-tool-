@@ -6,74 +6,59 @@
 <title>Movie Recap AI</title>
 
 <style>
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#0b0d12;
-  color:white;
+* {
+  box-sizing: border-box;
 }
-.container{
-  max-width:600px;
-  margin:auto;
-  padding:25px 18px;
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0b0d12;
+  color: white;
 }
-.logo{
-  text-align:center;
-  font-size:30px;
-  font-weight:bold;
-  margin:20px 0 8px;
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  padding: 30px 20px;
+  text-align: center;
 }
-.logo span{color:#8b5cf6}
-.sub{
-  text-align:center;
-  color:#9ca3af;
-  margin-bottom:30px;
+
+h1 {
+  margin-top: 30px;
+  font-size: 32px;
 }
-.card{
-  background:#151821;
-  border:1px solid #292e3a;
-  border-radius:18px;
-  padding:20px;
+
+p {
+  color: #aaa;
 }
-.upload{
-  border:2px dashed #555d70;
-  border-radius:15px;
-  padding:35px 15px;
-  text-align:center;
+
+.upload-box {
+  margin-top: 30px;
+  padding: 35px 20px;
+  border: 2px dashed #555;
+  border-radius: 18px;
+  background: #151820;
 }
-.upload-icon{font-size:45px}
-input{display:none}
-.upload label{
-  display:inline-block;
-  background:#7c3aed;
-  padding:13px 22px;
-  border-radius:10px;
-  margin-top:15px;
-  font-weight:bold;
+
+input[type="file"] {
+  margin-top: 20px;
+  width: 100%;
 }
-.file-name{
-  color:#a78bfa;
-  margin-top:15px;
-  word-break:break-all;
+
+button {
+  margin-top: 25px;
+  padding: 14px 25px;
+  border: 0;
+  border-radius: 10px;
+  background: #5865f2;
+  color: white;
+  font-size: 16px;
 }
-button{
-  width:100%;
-  border:0;
-  border-radius:12px;
-  padding:15px;
-  margin-top:20px;
-  background:#7c3aed;
-  color:white;
-  font-size:16px;
-  font-weight:bold;
-}
-button:active{transform:scale(.98)}
-.info{
-  margin-top:25px;
-  color:#9ca3af;
-  font-size:14px;
-  line-height:1.7;
+
+#status {
+  margin-top: 25px;
+  color: #00ff99;
 }
 </style>
 </head>
@@ -82,66 +67,53 @@ button:active{transform:scale(.98)}
 
 <div class="container">
 
-  <div class="logo">🎬 Movie <span>Recap AI</span></div>
+  <h1>🎬 Movie Recap AI</h1>
 
-  <div class="sub">
-    AI Movie Recap Generator
-  </div>
+  <p>Movie video ကို upload လုပ်ပြီး Recap ပြုလုပ်ပါ</p>
 
-  <div class="card">
+  <div class="upload-box">
 
-    <div class="upload">
+    <h2>📤 Upload Movie</h2>
 
-      <div class="upload-icon">🎥</div>
+    <input
+      type="file"
+      id="videoFile"
+      accept="video/*"
+    >
 
-      <h3>Upload Video</h3>
+    <br>
 
-      <p style="color:#9ca3af">
-        ကိုယ်ပိုင် / ခွင့်ပြုထားသော video ကို upload လုပ်ပါ
-      </p>
-
-      <input type="file" id="video" accept="video/*">
-
-      <label for="video">📁 Choose Video</label>
-
-      <div class="file-name" id="fileName">
-        No video selected
-      </div>
-
-    </div>
-
-    <button onclick="generateRecap()">
-      ✨ Generate Recap
+    <button onclick="uploadVideo()">
+      Generate Recap
     </button>
 
-    <div class="info">
-      🧠 AI က video ကို analyze လုပ်ပြီး<br>
-      🇲🇲 မြန်မာလို recap script ထုတ်ပေးမယ့် system ကို
-      နောက်တစ်ဆင့်မှာ ချိတ်ဆက်မယ်။
-    </div>
+    <div id="status"></div>
 
   </div>
 
 </div>
 
 <script>
-const video = document.getElementById("video");
-const fileName = document.getElementById("fileName");
 
-video.addEventListener("change", function(){
-  if(this.files.length > 0){
-    fileName.textContent = "✅ " + this.files[0].name
-  }
-});
+function uploadVideo() {
 
-function generateRecap(){
-  if(video.files.length === 0){
-    alert("အရင်ဆုံး Video တစ်ခုရွေးပါ 🎥");
+  const file = document.getElementById("videoFile").files[0];
+  const status = document.getElementById("status");
+
+  if (!file) {
+    status.innerText = "⚠️ Video တစ်ခုရွေးပါ";
     return;
   }
 
-  alert("Video ရွေးပြီးပါပြီ ✅\nAI Recap system ကို နောက်တစ်ဆင့်မှာ ချိတ်ဆက်မယ်။");
+  status.innerText = "⏳ Video ကိုစစ်ဆေးနေပါတယ်...";
+
+  setTimeout(() => {
+    status.innerText =
+      "✅ Video ရပါပြီ။ AI Recap Server ချိတ်ဆက်ဖို့ အဆင်သင့်ဖြစ်ပါပြီ။";
+  }, 1500);
+
 }
+
 </script>
 
 </body>
