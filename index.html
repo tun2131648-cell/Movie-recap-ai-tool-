@@ -20,11 +20,11 @@
     </p>
 
 
-    <!-- Upload -->
+    <!-- UPLOAD -->
 
     <section class="card">
 
-      <h2>📤 Video Upload</h2>
+      <h2>📤 Upload Video</h2>
 
       <input
         type="file"
@@ -39,7 +39,7 @@
     </section>
 
 
-    <!-- Preview -->
+    <!-- ORIGINAL VIDEO -->
 
     <section
       class="card"
@@ -47,7 +47,7 @@
       hidden
     >
 
-      <h2>▶️ Video Preview</h2>
+      <h2>▶️ Original Video</h2>
 
       <video
         id="videoPreview"
@@ -58,7 +58,7 @@
     </section>
 
 
-    <!-- Generate -->
+    <!-- GENERATE -->
 
     <section class="card">
 
@@ -72,7 +72,7 @@
     </section>
 
 
-    <!-- Processing -->
+    <!-- PROCESSING -->
 
     <section
       class="card"
@@ -87,10 +87,12 @@
       </p>
 
       <div class="progress">
+
         <div
           id="progressBar"
           class="progress-bar"
         ></div>
+
       </div>
 
       <p id="progressText">
@@ -100,7 +102,7 @@
     </section>
 
 
-    <!-- Result -->
+    <!-- AFTER VIDEO PREVIEW -->
 
     <section
       class="card"
@@ -108,10 +110,16 @@
       hidden
     >
 
-      <h2>✅ ပြီးပါပြီ</h2>
+      <h2>🎬 After Video</h2>
+
+      <video
+        id="resultVideo"
+        controls
+        playsinline
+      ></video>
 
       <p>
-        မြန်မာစာတန်းနဲ့ မြန်မာအသံပါဝင်တဲ့ MP4 ကို ရယူနိုင်ပါပြီ။
+        AI Processing ပြီးသွားတဲ့ Video ကို ဒီနေရာမှာ ကြည့်နိုင်ပါတယ်။
       </p>
 
       <a
@@ -124,6 +132,7 @@
       </a>
 
     </section>
+
 
   </main>
 
