@@ -12,10 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 const uploadDir = path.join(__dirname, "uploads");
-
-fs.mkdirSync(uploadDir, {
-  recursive: true
-});
+fs.mkdirSync(uploadDir, { recursive: true });
 
 const upload = multer({
   dest: uploadDir,
@@ -38,152 +35,96 @@ app.get("/", (req, res) => {
   res.send("Movie Recap AI Server is running!");
 });
 
-app.post(
-  "/upload",
-  upload.single("video"),
-  async (req, res) => {
+app.post("/upload", upload.single("video"), async (req, res) => {
+  let inputFile = null;
 
-    let inputFile = null;
-
-    try {
-
-      if (!apiKey) {
-        throw new Error(
-          "GEMINI_API_KEY မတွေ့ပါ"
-        );
-      }
-
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          error: "Video file မရပါ"
-        });
-      }
-
-      inputFile = req.file.path;
-
-      console.log(
-        "Video received:",
-        req.file.originalname
-      );
-
-      const mimeType =
-        req.file.mimetype &&
-        req.file.mimetype.startsWith("video/")
-          ? req.file.mimetype
-          : "video/mp4";
-
-      console.log(
-        "Video MIME type:",
-        mimeType
-      );
-
-      console.log(
-        "Uploading video to Gemini..."
-      );
-
-      const myFile = await ai.files.upload({
-        file: inputFile,
-        config: {
-          mimeType: mimeType
-        }
-      });
-
-      console.log(
-        "Gemini upload complete:",
-        myFile.uri
-      );
-
-      const interaction =
-        await ai.interactions.create({
-
-          model: "gemini-3.6-flash",
-
-          input: [
-
-            {
-              type: "text",
-
-              text: `
-ဒီ video ကို သေချာကြည့်ပြီး
-မြန်မာဘာသာနဲ့ movie recap အတွက်
-အရေးကြီးတဲ့အဖြစ်အပျက်တွေကို
-အစဉ်လိုက် ရှင်းပြပါ။
-
-စည်းကမ်းများ -
-
-1. မြန်မာလိုစာတန်းထိုးရေးပါ။
-2. အရေးကြီးတဲ့ scene တွေကိုပဲ ရွေးပါ။
-3. တိုတိုနဲ့ ရှင်းရှင်းရေးပါ။
-4. Video ထဲမှာ မရှိတဲ့အကြောင်းအရာ
-   မထည့်ပါနဲ့။
-5. ဇာတ်လမ်းကို အစမှအဆုံးစိတ်ဝင်စားစရာနေရာဘဲးထဲ့ပါ
-6.နားလည်လွယ်အောင် ရှင်းပြပါ မူရင်းကစာတန်းများကိုဝါးပြစ်ပါ
-              `
-            },
-
-            {
-              type: "video",
-              uri: myFile.uri,
-              mime_type: mimeType
-            }
-
-          ]
-
-        });
-
-      const result =
-        interaction.output_text;
-
-      if (!result) {
-        throw new Error(
-          "Gemini response မရပါ"
-        );
-      }
-
-      console.log(
-        "Gemini result received."
-      );
-
-      res.json({
-        success: true,
-        result: result
-      });
-
-    } catch (error) {
-
-      console.error(
-        "GEMINI ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        success: false,
-        error:
-          error.message ||
-          "Gemini processing မအောင်မြင်ပါ"
-      });
-
-    } finally {
-
-      if (
-        inputFile &&
-        fs.existsSync(inputFile)
-      ) {
-        fs.unlinkSync(inputFile);
-      }
-
+  try {
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY မတွေ့ပါ");
     }
 
-  }
-);
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "Video file မရပါ"
+      });
+    }
 
-app.listen(
-  PORT,
-  "0.0.0.0",
-  () => {
-    console.log(
-      `Server running on port ${PORT}`
-    );
+    inputFile = req.file.path;
+
+    const mimeType =
+      req.file.mimetype &&
+      req.file.mimetype.startsWith("video/")
+        ? req.file.mimetype
+        : "video/mp4";
+
+    console.log("Video:", req.file.originalname);
+    console.log("MIME:", mimeType);
+    console.log("Uploading to Gemini...");
+
+    const myFile = await ai.files.upload({
+      file: inputFile,
+      config: {
+        mimeType: mimeType
+      }
+    });
+
+    console.log("Gemini upload complete:", myFile.uri);
+
+    const interaction = await ai.interactions.create({
+      model: "gemini-3.6-flash",
+      input: [
+        {
+          type: "text",
+          text: `
+ဒီ video ကို သေချာကြည့်ပါ။
+
+Movie recap အတွက် အရေးကြီးတဲ့
+အဖြစ်အပျက်တွေကို မြန်မာဘာသာနဲ့
+အစဉ်လိုက် ရှင်းပြပါ။
+
+- မြန်မာလိုရေးပါ
+- နားလည်လွယ်အောင်ရေးပါ
+- အရေးကြီးတဲ့ scene တွေကိုပဲ ရွေးပါ
+- Video ထဲမှာ မရှိတဲ့အကြောင်းအရာ မထည့်ပါနဲ့
+          `
+        },
+        {
+          type: "video",
+          uri: myFile.uri,
+          mimeType: mimeType
+        }
+      ]
+    });
+
+    const result = interaction.output_text;
+
+    if (!result) {
+      throw new Error("Gemini response မရပါ");
+    }
+
+    console.log("Gemini response received.");
+
+    res.json({
+      success: true,
+      result: result
+    });
+
+  } catch (error) {
+    console.error("GEMINI ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message || "Processing မအောင်မြင်ပါ"
+    });
+
+  } finally {
+    if (inputFile && fs.existsSync(inputFile)) {
+      fs.unlinkSync(inputFile);
+    }
   }
-);
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
