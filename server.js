@@ -12,17 +12,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const uploads = path.join(__dirname, "uploads");
-const outputs = path.join(__dirname, "outputs");
-const temp = path.join(__dirname, "temp");
+const jobsDir = path.join(__dirname, "jobs");
 
 fs.mkdirSync(uploads, { recursive: true });
-fs.mkdirSync(outputs, { recursive: true });
-fs.mkdirSync(temp, { recursive: true });
+fs.mkdirSync(jobsDir, { recursive: true });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 
-app.use("/outputs", express.static(outputs));
+app.use("/jobs", express.static(jobsDir));
 
 const upload = multer({
   dest: uploads,
@@ -34,7 +32,7 @@ const upload = multer({
 const API_KEY = process.env.GEMINI_API_KEY;
 
 if (!API_KEY) {
-  console.error("❌ GEMINI_API_KEY မတွေ့ပါ");
+  console.error("GEMINI_API_KEY မတွေ့ပါ");
 }
 
 const ai = new GoogleGenAI({
@@ -42,216 +40,355 @@ const ai = new GoogleGenAI({
 });
 
 
-function runFFmpeg(args) {
-
-  return new Promise((resolve, reject) => {
-
-    const process = spawn(ffmpegPath, args);
-
-    let errorText = "";
-
-    process.stderr.on("data", data => {
-      errorText += data.toString();
-    });
-
-    process.on("error", reject);
-
-    process.on("close", code => {
-
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(
-          new Error(
-            errorText.slice(-4000) ||
-            "FFmpeg processing failed"
-          )
-        );
-      }
-
-    });
-
-  });
-
-}
-
+/* =========================
+   HELPERS
+========================= */
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 
-async function getVideoDuration(file) {
+async function retry429(fn, name = "API") {
 
-  return new Promise((resolve, reject) => {
+  const delays = [
+    30000,
+    60000,
+    90000
+  ];
 
-    const process = spawn(ffmpegPath, [
-      "-i",
-      file
-    ]);
-
-    let output = "";
-
-    process.stderr.on("data", data => {
-      output += data.toString();
-    });
-
-    process.on("close", () => {
-
-      const match =
-        output.match(
-          /Duration:\s*(\d+):(\d+):([\d.]+)/
-        );
-
-      if (!match) {
-        reject(
-          new Error("Video duration မဖတ်နိုင်ပါ")
-        );
-        return;
-      }
-
-      const hours = Number(match[1]);
-      const minutes = Number(match[2]);
-      const seconds = Number(match[3]);
-
-      resolve(
-        hours * 3600 +
-        minutes * 60 +
-        seconds
-      );
-
-    });
-
-  });
-
-}
-
-
-/* =========================
-   GEMINI VIDEO RECAP
-========================= */
-
-async function createRecap(videoFile, mimeType) {
-
-  console.log("📤 Uploading video to Gemini...");
-
-  let file = await ai.files.upload({
-    file: videoFile,
-    config: {
-      mimeType: mimeType
-    }
-  });
-
-
-  while (file.state === "PROCESSING") {
-
-    console.log("⏳ Gemini video processing...");
-
-    await sleep(3000);
-
-    file = await ai.files.get({
-      name: file.name
-    });
-
-  }
-
-
-  if (file.state === "FAILED") {
-    throw new Error(
-      "Gemini video processing failed"
-    );
-  }
-
-
-  console.log("🤖 Gemini analyzing video...");
-
-
-  const interaction =
-    await ai.interactions.create({
-
-      model: "gemini-3.8-flash",
-
-      input: [
-
-        {
-          type: "video",
-          uri: file.uri,
-          mime_type: file.mimeType,
-          processing: "static"
-        },
-
-        {
-          type: "text",
-
-          text: `
-ဒီ video ကို သေချာကြည့်ပြီး
-မြန်မာဘာသာနဲ့ Movie Recap narration ရေးပါ။
-
-စည်းကမ်းများ -
-
-1. Video ထဲမှာ ဖြစ်တဲ့အကြောင်းအရာကိုပဲ ရေးပါ။
-2. အရေးကြီးတဲ့ scene တွေကို အစဉ်လိုက်ရေးပါ။
-3. မြန်မာလို သဘာဝကျကျ ရေးပါ။
-4. Voice နဲ့ဖတ်လို့ကောင်းအောင် ရေးပါ။
-5. မလိုအပ်တဲ့အကြောင်းအရာ မထည့်ပါနဲ့။
-6. Markdown မသုံးပါနဲ့။
-7. Heading မသုံးပါနဲ့။
-8. Bullet point မသုံးပါနဲ့။
-`
-        }
-
-      ]
-
-    });
-
-
-  const text =
-    interaction.output_text?.trim();
-
-
-  if (!text) {
-    throw new Error(
-      "Gemini Recap မရပါ"
-    );
-  }
-
-
-  console.log("✅ Recap received");
-
-  return text;
-
-}
-
-
-/* =========================
-   BURMESE TTS
-========================= */
-
-async function createVoice(text, outputFile) {
-
-  console.log("🗣️ Creating Burmese voice...");
-
-
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let i = 0; i <= delays.length; i++) {
 
     try {
 
-      const interaction =
-        await ai.interactions.create({
+      return await fn();
+
+    } catch (error) {
+
+      const message =
+        String(error?.message || error);
+
+      const is429 =
+        message.includes("429") ||
+        message.toLowerCase().includes("rate limit") ||
+        message.toLowerCase().includes("resource_exhausted");
+
+      if (!is429 || i === delays.length) {
+        throw error;
+      }
+
+      const wait =
+        delays[i];
+
+      console.log(
+        `⚠️ ${name} rate limit. Waiting ${wait / 1000}s...`
+      );
+
+      await sleep(wait);
+    }
+  }
+}
+
+
+function runFFmpeg(args) {
+
+  return new Promise((resolve, reject) => {
+
+    const process = spawn(
+      ffmpegPath,
+      args
+    );
+
+    let stderr = "";
+
+    process.stderr.on(
+      "data",
+      data => {
+        stderr += data.toString();
+      }
+    );
+
+    process.on(
+      "error",
+      reject
+    );
+
+    process.on(
+      "close",
+      code => {
+
+        if (code === 0) {
+          resolve();
+        } else {
+
+          reject(
+            new Error(
+              stderr.slice(-5000) ||
+              "FFmpeg error"
+            )
+          );
+
+        }
+
+      }
+    );
+
+  });
+}
+
+
+function getDuration(file) {
+
+  return new Promise((resolve, reject) => {
+
+    const process =
+      spawn(
+        ffmpegPath,
+        ["-i", file]
+      );
+
+    let output = "";
+
+    process.stderr.on(
+      "data",
+      data => {
+        output += data.toString();
+      }
+    );
+
+    process.on(
+      "close",
+      () => {
+
+        const match =
+          output.match(
+            /Duration:\s*(\d+):(\d+):([\d.]+)/
+          );
+
+        if (!match) {
+
+          reject(
+            new Error(
+              "Video duration မဖတ်နိုင်ပါ"
+            )
+          );
+
+          return;
+        }
+
+        const h =
+          Number(match[1]);
+
+        const m =
+          Number(match[2]);
+
+        const s =
+          Number(match[3]);
+
+        resolve(
+          h * 3600 +
+          m * 60 +
+          s
+        );
+
+      }
+    );
+
+  });
+
+}
+
+
+function escapeASS(text) {
+
+  return String(text)
+    .replace(/\\/g, "\\\\")
+    .replace(/{/g, "\\{")
+    .replace(/}/g, "\\}");
+
+}
+
+
+function assTime(seconds) {
+
+  const h =
+    Math.floor(seconds / 3600);
+
+  const m =
+    Math.floor(
+      (seconds % 3600) / 60
+    );
+
+  const s =
+    Math.floor(seconds % 60);
+
+  const cs =
+    Math.floor(
+      (seconds -
+        Math.floor(seconds)) *
+      100
+    );
+
+  return (
+    `${h}:${String(m).padStart(2, "0")}:` +
+    `${String(s).padStart(2, "0")}.` +
+    `${String(cs).padStart(2, "0")}`
+  );
+
+}
+
+
+/* =========================
+   GEMINI RECAP
+========================= */
+
+async function createRecap(
+  video,
+  mimeType
+) {
+
+  console.log(
+    "📤 Uploading video to Gemini..."
+  );
+
+  let file =
+    await retry429(
+      () =>
+        ai.files.upload({
+          file: video,
+          config: {
+            mimeType: mimeType
+          }
+        }),
+      "Gemini upload"
+    );
+
+
+  while (
+    file.state === "PROCESSING"
+  ) {
+
+    console.log(
+      "⏳ Gemini processing..."
+    );
+
+    await sleep(3000);
+
+    file =
+      await ai.files.get({
+        name: file.name
+      });
+
+  }
+
+
+  if (
+    file.state === "FAILED"
+  ) {
+
+    throw new Error(
+      "Gemini video processing failed"
+    );
+
+  }
+
+
+  console.log(
+    "🤖 Gemini analyzing..."
+  );
+
+
+  const interaction =
+    await retry429(
+      () =>
+        ai.interactions.create({
+
+          model:
+            "gemini-3.8-flash",
+
+          input: [
+
+            {
+              type: "video",
+              uri: file.uri,
+              mime_type: file.mimeType,
+              processing: "static"
+            },
+
+            {
+              type: "text",
+
+              text: `
+ဒီ video ကို သေချာကြည့်ပြီး
+မြန်မာဘာသာနဲ့ movie recap narration ရေးပါ။
+
+စည်းကမ်းများ။
+
+- Video ထဲမှာ ဖြစ်တာကိုပဲရေးပါ။
+- အရေးကြီးတဲ့ scene တွေကို အစဉ်လိုက်ရေးပါ။
+- မြန်မာလို သဘာဝကျကျရေးပါ။
+- Voice နဲ့ဖတ်လို့ကောင်းအောင်ရေးပါ။
+- မလိုအပ်တာမထည့်ပါနဲ့။
+- Markdown မသုံးပါနဲ့။
+- Heading မသုံးပါနဲ့။
+- Bullet point မသုံးပါနဲ့။
+`
+            }
+
+          ]
+
+        }),
+      "Gemini analysis"
+    );
+
+
+  const result =
+    interaction.output_text?.trim();
+
+
+  if (!result) {
+
+    throw new Error(
+      "Gemini recap မရပါ"
+    );
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =========================
+   BURMESE VOICE
+========================= */
+
+async function createVoice(
+  text,
+  output
+) {
+
+  console.log(
+    "🗣️ Creating Burmese voice..."
+  );
+
+
+  const interaction =
+    await retry429(
+      () =>
+        ai.interactions.create({
 
           model:
             "gemini-3.1-flash-tts-preview",
 
           input: `
-Synthesize natural Burmese (Myanmar) speech.
+Speak only this Burmese narration.
 
 Style:
-- Movie recap narration
-- Natural
-- Clear
-- Medium speed
-- Do not speak the instructions
-- Speak only the Burmese narration
+Natural movie recap narrator.
+Clear Burmese.
+Medium speed.
 
 Narration:
 
@@ -272,111 +409,111 @@ ${text}
 
           }
 
-        });
+        }),
+      "Gemini TTS"
+    );
 
 
-      if (
-        !interaction.output_audio ||
-        !interaction.output_audio.data
-      ) {
+  if (
+    !interaction.output_audio ||
+    !interaction.output_audio.data
+  ) {
 
-        throw new Error(
-          "TTS audio မရပါ"
-        );
-
-      }
-
-
-      const pcm =
-        Buffer.from(
-          interaction.output_audio.data,
-          "base64"
-        );
-
-
-      await new Promise(
-        (resolve, reject) => {
-
-          const writer =
-            new wav.FileWriter(
-              outputFile,
-              {
-                channels: 1,
-                sampleRate: 24000,
-                bitDepth: 16
-              }
-            );
-
-          writer.on(
-            "finish",
-            resolve
-          );
-
-          writer.on(
-            "error",
-            reject
-          );
-
-          writer.write(pcm);
-          writer.end();
-
-        }
-      );
-
-
-      console.log("✅ Burmese voice created");
-
-      return;
-
-    }
-
-    catch (error) {
-
-      console.log(
-        `TTS attempt ${attempt} failed`
-      );
-
-      if (attempt === 3) {
-        throw error;
-      }
-
-      await sleep(1500);
-
-    }
+    throw new Error(
+      "Burmese voice မရပါ"
+    );
 
   }
+
+
+  const pcm =
+    Buffer.from(
+      interaction.output_audio.data,
+      "base64"
+    );
+
+
+  await new Promise(
+    (resolve, reject) => {
+
+      const writer =
+        new wav.FileWriter(
+          output,
+          {
+            channels: 1,
+            sampleRate: 24000,
+            bitDepth: 16
+          }
+        );
+
+      writer.on(
+        "finish",
+        resolve
+      );
+
+      writer.on(
+        "error",
+        reject
+      );
+
+      writer.write(pcm);
+      writer.end();
+
+    }
+  );
 
 }
 
 
 /* =========================
-   ASS SUBTITLE
+   SUBTITLE
 ========================= */
-
-function escapeASS(text) {
-
-  return String(text)
-    .replace(/\\/g, "\\\\")
-    .replace(/{/g, "\\{")
-    .replace(/}/g, "\\}");
-
-}
-
 
 function createASS(
   text,
   duration,
-  position
+  position,
+  fontSize,
+  color,
+  outline
 ) {
 
-  const y =
-    Math.round(
-      1080 *
-      (Number(position) / 100)
-    );
+  let alignment = 5;
+
+  let y = 540;
+
+  const pos =
+    Number(position);
 
 
-  const safeText =
+  if (pos <= 25) {
+
+    y = 150;
+
+  } else if (pos <= 55) {
+
+    y = 540;
+
+  } else {
+
+    y = 900;
+
+  }
+
+
+  const size =
+    Number(fontSize || 58);
+
+
+  const primary =
+    color || "&H00FFFFFF";
+
+
+  const outlineColor =
+    outline || "&H00000000";
+
+
+  const safe =
     escapeASS(text);
 
 
@@ -388,31 +525,26 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Myanmar,Arial,58,&H00FFFFFF,&H00FFFFFF,&H00000000,&H99000000,0,0,0,0,100,100,0,0,1,3,1,5,40,40,40,1
+Style: Myanmar,Arial,${size},${primary},${primary},${outlineColor},&H99000000,0,0,0,0,100,100,0,0,1,3,1,5,40,40,40,1
 
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
-Dialogue: 0,0:00:00.00,0:10:00.00,Myanmar,,0,0,0,,{\\pos(960,${y})}${safeText}
+Dialogue: 0,0:00:00.00,${assTime(duration)},Myanmar,,0,0,0,,{\\pos(960,${y})}${safe}
 `;
 
 }
 
 
 /* =========================
-   FINAL MP4
+   RENDER
 ========================= */
 
-async function renderFinalVideo(
-  input,
-  audio,
+async function renderVideo(
+  original,
+  voice,
   subtitle,
   output
 ) {
-
-  console.log(
-    "🎬 Rendering final MP4..."
-  );
-
 
   const subtitlePath =
     subtitle
@@ -420,21 +552,20 @@ async function renderFinalVideo(
       .replace(/:/g, "\\:");
 
   const filter =
-
-    "[0:v]split=2[original][blur];" +
+    "[0:v]split=2[main][blur];" +
 
     "[blur]" +
-    "crop=iw:ih*0.28:0:ih*0.72," +
-    "boxblur=12:2" +
+    "crop=iw:ih*0.30:0:ih*0.70," +
+    "boxblur=14:3" +
     "[blurred];" +
 
-    "[original][blurred]" +
+    "[main][blurred]" +
     "overlay=0:H-h" +
-    "[video];" +
+    "[clean];" +
 
-    "[video]" +
+    "[clean]" +
     `subtitles=${subtitlePath}` +
-    "[final]";
+    "[v]";
 
 
   await runFFmpeg([
@@ -442,16 +573,16 @@ async function renderFinalVideo(
     "-y",
 
     "-i",
-    input,
+    original,
 
     "-i",
-    audio,
+    voice,
 
     "-filter_complex",
     filter,
 
     "-map",
-    "[final]",
+    "[v]",
 
     "-map",
     "1:a:0",
@@ -459,7 +590,8 @@ async function renderFinalVideo(
     "-af",
     "apad",
 
-    "-shortest",
+    "-t",
+    "300",
 
     "-c:v",
     "libx264",
@@ -486,16 +618,11 @@ async function renderFinalVideo(
 
   ]);
 
-
-  console.log(
-    "✅ Final MP4 created"
-  );
-
 }
 
 
 /* =========================
-   UPLOAD API
+   UPLOAD
 ========================= */
 
 app.post(
@@ -503,11 +630,7 @@ app.post(
   upload.single("video"),
   async (req, res) => {
 
-    let inputFile = null;
-    let audioFile = null;
-    let subtitleFile = null;
-    let outputFile = null;
-
+    let input = null;
 
     try {
 
@@ -522,22 +645,20 @@ app.post(
 
       if (!req.file) {
 
-        return res.status(400).json({
-          success: false,
-          error:
-            "Video file မရပါ"
-        });
+        throw new Error(
+          "Video file မရပါ"
+        );
 
       }
 
 
-      inputFile =
+      input =
         req.file.path;
 
 
       const duration =
-        await getVideoDuration(
-          inputFile
+        await getDuration(
+          input
         );
 
 
@@ -550,74 +671,98 @@ app.post(
       }
 
 
-      const mimeType =
-        req.file.mimetype &&
-        req.file.mimetype.startsWith("video/")
+      const mime =
+        req.file.mimetype?.startsWith(
+          "video/"
+        )
           ? req.file.mimetype
           : "video/mp4";
 
 
-      console.log(
-        "📁 Video:",
-        req.file.originalname
-      );
+      /* GEMINI RECAP */
 
-
-      /* 1 */
       const recap =
         await createRecap(
-          inputFile,
-          mimeType
+          input,
+          mime
         );
 
 
-      /* 2 */
+      /* JOB */
 
-      const id =
+      const jobId =
         Date.now() +
         "-" +
         Math.random()
           .toString(36)
-          .substring(2, 8);
+          .slice(2, 8);
 
 
-      audioFile =
+      const job =
         path.join(
-          temp,
-          `${id}.wav`
+          jobsDir,
+          jobId
         );
 
 
-      subtitleFile =
+      fs.mkdirSync(job);
+
+
+      const original =
         path.join(
-          temp,
-          `${id}.ass`
+          job,
+          "original.mp4"
         );
 
 
-      outputFile =
+      const voice =
         path.join(
-          outputs,
-          `${id}.mp4`
+          job,
+          "voice.wav"
         );
 
 
-      /* 3 */
-
-      const position =
-        Number(
-          req.body.subtitleY || 82
+      const subtitle =
+        path.join(
+          job,
+          "subtitle.ass"
         );
 
+
+      const preview =
+        path.join(
+          job,
+          "preview.mp4"
+        );
+
+
+      fs.copyFileSync(
+        input,
+        original
+      );
+
+
+      /* TTS */
+
+      await createVoice(
+        recap,
+        voice
+      );
+
+
+      /* Default subtitle */
 
       fs.writeFileSync(
 
-        subtitleFile,
+        subtitle,
 
         createASS(
           recap,
           duration,
-          position
+          82,
+          58,
+          "&H00FFFFFF",
+          "&H00000000"
         ),
 
         "utf8"
@@ -625,31 +770,13 @@ app.post(
       );
 
 
-      /* 4 */
+      /* PREVIEW */
 
-      await createVoice(
-        recap,
-        audioFile
-      );
-
-
-      /* 5 */
-
-      await renderFinalVideo(
-        inputFile,
-        audioFile,
-        subtitleFile,
-        outputFile
-      );
-
-
-      const downloadUrl =
-        `${req.protocol}://${req.get("host")}/outputs/${path.basename(outputFile)}`;
-
-
-      console.log(
-        "🎉 ALL DONE:",
-        downloadUrl
+      await renderVideo(
+        original,
+        voice,
+        subtitle,
+        preview
       );
 
 
@@ -657,9 +784,12 @@ app.post(
 
         success: true,
 
-        result: recap,
+        jobId,
 
-        downloadUrl: downloadUrl
+        recap,
+
+        previewUrl:
+          `${req.protocol}://${req.get("host")}/jobs/${jobId}/preview.mp4`
 
       });
 
@@ -669,7 +799,7 @@ app.post(
     catch (error) {
 
       console.error(
-        "❌ PROCESS ERROR:",
+        "UPLOAD ERROR:",
         error
       );
 
@@ -686,34 +816,196 @@ app.post(
 
     }
 
-
     finally {
 
-      for (
-        const file
-        of [
-          inputFile,
-          audioFile,
-          subtitleFile
-        ]
-      ) {
+      try {
 
-        try {
+        if (
+          input &&
+          fs.existsSync(input)
+        ) {
 
-          if (
-            file &&
-            fs.existsSync(file)
-          ) {
-
-            fs.unlinkSync(file);
-
-          }
+          fs.unlinkSync(input);
 
         }
 
-        catch {}
+      } catch {}
+
+    }
+
+  }
+);
+
+
+/* =========================
+   FINAL RENDER
+========================= */
+
+app.post(
+  "/render",
+  async (req, res) => {
+
+    try {
+
+      const {
+        jobId,
+        position,
+        fontSize,
+        color
+      } = req.body;
+
+
+      if (!jobId) {
+
+        throw new Error(
+          "jobId မရပါ"
+        );
 
       }
+
+
+      const job =
+        path.join(
+          jobsDir,
+          jobId
+        );
+
+
+      if (!fs.existsSync(job)) {
+
+        throw new Error(
+          "Job မတွေ့ပါ"
+        );
+
+      }
+
+
+      const original =
+        path.join(
+          job,
+          "original.mp4"
+        );
+
+
+      const voice =
+        path.join(
+          job,
+          "voice.wav"
+        );
+
+
+      const oldSubtitle =
+        path.join(
+          job,
+          "subtitle.ass"
+        );
+
+
+      const preview =
+        path.join(
+          job,
+          "preview.mp4"
+        );
+
+
+      if (
+        !fs.existsSync(original) ||
+        !fs.existsSync(voice) ||
+        !fs.existsSync(oldSubtitle)
+      ) {
+
+        throw new Error(
+          "Processing files မပြည့်စုံပါ"
+        );
+
+      }
+
+
+      const recap =
+        fs.readFileSync(
+          path.join(
+            job,
+            "recap.txt"
+          ),
+          "utf8"
+        );
+
+
+      const duration =
+        await getDuration(
+          original
+        );
+
+
+      const subtitle =
+        path.join(
+          job,
+          "final.ass"
+        );
+
+
+      const final =
+        path.join(
+          job,
+          "final.mp4"
+        );
+
+
+      fs.writeFileSync(
+
+        subtitle,
+
+        createASS(
+          recap,
+          duration,
+          position || 82,
+          fontSize || 58,
+          color || "&H00FFFFFF",
+          "&H00000000"
+        ),
+
+        "utf8"
+
+      );
+
+
+      await renderVideo(
+        original,
+        voice,
+        subtitle,
+        final
+      );
+
+
+      res.json({
+
+        success: true,
+
+        downloadUrl:
+          `${req.protocol}://${req.get("host")}/jobs/${jobId}/final.mp4`
+
+      });
+
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "RENDER ERROR:",
+        error
+      );
+
+
+      res.status(500).json({
+
+        success: false,
+
+        error:
+          error.message ||
+          "Final render failed"
+
+      });
 
     }
 
