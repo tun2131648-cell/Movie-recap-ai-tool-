@@ -1,130 +1,246 @@
-const express = require("express");
-const multer = require("multer");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-const { GoogleGenAI } = require("@google/genai");
+const videoInput = document.getElementById("videoInput");
+const fileName = document.getElementById("fileName");
+const previewSection = document.getElementById("previewSection");
+const videoPreview = document.getElementById("videoPreview");
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const generateButton = document.getElementById("generateButton");
 
-app.use(cors());
-app.use(express.json());
+const processingSection = document.getElementById("processingSection");
+const statusText = document.getElementById("statusText");
+const progressBar = document.getElementById("progressBar");
+const progressText = document.getElementById("progressText");
 
-const uploadDir = path.join(__dirname, "uploads");
-fs.mkdirSync(uploadDir, { recursive: true });
+const resultSection = document.getElementById("resultSection");
+const resultVideo = document.getElementById("resultVideo");
+const downloadButton = document.getElementById("downloadButton");
 
-const upload = multer({
-  dest: uploadDir,
-  limits: {
-    fileSize: 500 * 1024 * 1024
+let selectedFile = null;
+let videoObjectURL = null;
+
+
+// ===============================
+// VIDEO SELECT
+// ===============================
+
+videoInput.addEventListener("change", function () {
+
+  const file = videoInput.files[0];
+
+  if (!file) return;
+
+  selectedFile = file;
+
+  const fileSizeMB =
+    file.size / (1024 * 1024);
+
+  if (videoObjectURL) {
+    URL.revokeObjectURL(videoObjectURL);
   }
-});
 
-const apiKey = process.env.GEMINI_API_KEY;
+  videoObjectURL =
+    URL.createObjectURL(file);
 
-if (!apiKey) {
-  console.error("GEMINI_API_KEY မတွေ့ပါ");
-}
+  videoPreview.src =
+    videoObjectURL;
 
-const ai = new GoogleGenAI({
-  apiKey: apiKey
-});
+  videoPreview.onloadedmetadata =
+    function () {
 
-app.get("/", (req, res) => {
-  res.send("Movie Recap AI Server is running!");
-});
+      const duration =
+        videoPreview.duration;
 
-app.post("/upload", upload.single("video"), async (req, res) => {
-  let inputFile = null;
+      const maxDuration =
+        5 * 60;
 
-  try {
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY မတွေ့ပါ");
-    }
+      if (duration > maxDuration) {
 
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: "Video file မရပါ"
-      });
-    }
+        alert(
+          "❌ Video က ၅ မိနစ်ထက် မကျော်ရပါ။"
+        );
 
-    inputFile = req.file.path;
+        videoInput.value = "";
+        selectedFile = null;
 
-    const mimeType =
-      req.file.mimetype &&
-      req.file.mimetype.startsWith("video/")
-        ? req.file.mimetype
-        : "video/mp4";
+        previewSection.hidden = true;
 
-    console.log("Video:", req.file.originalname);
-    console.log("MIME:", mimeType);
-    console.log("Uploading to Gemini...");
-
-    const myFile = await ai.files.upload({
-      file: inputFile,
-      config: {
-        mimeType: mimeType
+        return;
       }
-    });
 
-    console.log("Gemini upload complete:", myFile.uri);
+      const minutes =
+        Math.floor(duration / 60);
 
-    const interaction = await ai.interactions.create({
-      model: "gemini-3.6-flash",
-      input: [
-        {
-          type: "text",
-          text: `
-ဒီ video ကို သေချာကြည့်ပါ။
+      const seconds =
+        Math.floor(duration % 60);
 
-Movie recap အတွက် အရေးကြီးတဲ့
-အဖြစ်အပျက်တွေကို မြန်မာဘာသာနဲ့
-အစဉ်လိုက် ရှင်းပြပါ။
-မြန်မာအသံထဲ့ပေးပါ 
-- မြန်မာလိုရေးပါ
-- နားလည်လယ်အောင်ရေးပါ
-- အရေးကြီးတဲ့ scene တွေကိုပဲ ရွေးပါ
-- Video ထဲမှာ မရှိတဲ့အကြောင်းအရာ မထည့်ပါနဲ့
-          `
-        },
-        {         
-  type: "video",
-  uri: myFile.uri,
-  mime_type: mimeType
-        }
-      ]
-    });
+      fileName.textContent =
+        `📁 ${file.name} | ⏱️ ${minutes}:${String(seconds).padStart(2, "0")} | 💾 ${fileSizeMB.toFixed(1)} MB`;
 
-    const result = interaction.output_text;
+      previewSection.hidden = false;
+      resultSection.hidden = true;
+    };
+});
 
-    if (!result) {
-      throw new Error("Gemini response မရပါ");
+
+// ===============================
+// GENERATE
+// ===============================
+
+generateButton.addEventListener(
+  "click",
+  async function () {
+
+    if (!selectedFile) {
+
+      alert(
+        "အရင်ဆုံး Video ရွေးပါ။"
+      );
+
+      return;
     }
 
-    console.log("Gemini response received.");
+    generateButton.disabled = true;
 
-    res.json({
-      success: true,
-      result: result
-    });
+    processingSection.hidden = false;
+    resultSection.hidden = true;
 
-  } catch (error) {
-    console.error("GEMINI ERROR:", error);
+    progressBar.style.width = "5%";
+    progressText.textContent = "5%";
 
-    res.status(500).json({
-      success: false,
-      error: error.message || "Processing မအောင်မြင်ပါ"
-    });
+    statusText.textContent =
+      "📤 Video ကို Server ဆီပို့နေပါတယ်...";
 
-  } finally {
-    if (inputFile && fs.existsSync(inputFile)) {
-      fs.unlinkSync(inputFile);
+    const formData =
+      new FormData();
+
+    formData.append(
+      "video",
+      selectedFile
+    );
+
+    try {
+
+      // ===============================
+      // UPLOAD + AI PROCESSING
+      // ===============================
+
+      progressBar.style.width = "15%";
+      progressText.textContent = "15%";
+
+      statusText.textContent =
+        "🤖 AI Processing စတင်နေပါတယ်...";
+
+      const response =
+        await fetch(
+          "https://movie-recap-ai-tool.onrender.com/upload",
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+
+      progressBar.style.width = "95%";
+      progressText.textContent = "95%";
+
+      statusText.textContent =
+        "⏳ AI Result ကို လက်ခံနေပါတယ်...";
+
+      const data =
+        await response.json();
+
+      if (
+        response.ok &&
+        data.success
+      ) {
+
+        progressBar.style.width =
+          "100%";
+
+        progressText.textContent =
+          "100%";
+
+        statusText.textContent =
+          "✅ AI Processing ပြီးပါပြီ!";
+
+        // Current backend returns recap text
+        if (data.result) {
+
+          resultSection.hidden =
+            false;
+
+          resultSection.scrollIntoView({
+            behavior: "smooth"
+          });
+
+          // Show recap text
+          resultVideo.style.display =
+            "none";
+
+          downloadButton.style.display =
+            "none";
+
+          const oldResult =
+            document.getElementById(
+              "recapText"
+            );
+
+          if (oldResult) {
+            oldResult.remove();
+          }
+
+          const recap =
+            document.createElement(
+              "div"
+            );
+
+          recap.id =
+            "recapText";
+
+          recap.style.marginTop =
+            "15px";
+
+          recap.style.padding =
+            "15px";
+
+          recap.style.background =
+            "#0f1219";
+
+          recap.style.borderRadius =
+            "12px";
+
+          recap.style.lineHeight =
+            "1.8";
+
+          recap.textContent =
+            data.result;
+
+          resultSection.appendChild(
+            recap
+          );
+        }
+
+      } else {
+
+        throw new Error(
+          data.error ||
+          "Processing မအောင်မြင်ပါ"
+        );
+      }
+
+    } catch (error) {
+
+      progressBar.style.width =
+        "0%";
+
+      progressText.textContent =
+        "0%";
+
+      statusText.textContent =
+        "❌ " + error.message;
+
+    } finally {
+
+      generateButton.disabled =
+        false;
     }
   }
-});
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+);
