@@ -2,23 +2,13 @@
 <html lang="my">
 
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
->
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 
 <title>Movie Recap AI</title>
 
-<link
-  rel="stylesheet"
-  href="style.css"
->
-
+<link rel="stylesheet" href="style.css">
 </head>
-
 
 <body>
 
@@ -27,7 +17,7 @@
 <h1>🎬 Movie Recap AI</h1>
 
 <p class="subtitle">
-Video တင်ရုံနဲ့ မြန်မာအသံ + မြန်မာစာတန်း + MP4
+Video တင်ရုံနဲ့ Movie Recap MP4
 </p>
 
 
@@ -36,9 +26,9 @@ Video တင်ရုံနဲ့ မြန်မာအသံ + မြန်မ�
 <h2>📤 Upload Video</h2>
 
 <input
-  type="file"
-  id="videoInput"
-  accept="video/*"
+id="videoInput"
+type="file"
+accept="video/*"
 >
 
 <p id="fileName">
@@ -48,95 +38,40 @@ Video မရွေးရသေးပါ
 </section>
 
 
-
 <section
-  class="card"
-  id="previewSection"
-  hidden
+class="card"
+id="originalSection"
+hidden
 >
 
 <h2>▶️ Original Video</h2>
 
 <video
-  id="videoPreview"
-  controls
-  playsinline
+id="originalVideo"
+controls
+playsinline
 ></video>
 
 </section>
 
 
-
 <section
-  class="card"
-  id="customSection"
-  hidden
+class="card"
+id="processingSection"
+hidden
 >
 
-<h2>🎚️ Subtitle Position</h2>
+<h2>⚙️ AI Processing</h2>
 
-<p>
-စာတန်းနေရာ —
-<span id="positionValue">
-82%
-</span>
-</p>
-
-<input
-  type="range"
-  id="subtitleY"
-  min="8"
-  max="92"
-  value="82"
->
-
-<div class="positionLabels">
-
-<span>အပေါ်</span>
-
-<span>အလယ်</span>
-
-<span>အောက်</span>
-
-</div>
-
-</section>
-
-
-
-<section class="card">
-
-<button
-  id="generateButton"
->
-
-🤖 AI Generate MP4
-
-</button>
-
-</section>
-
-
-
-<section
-  class="card"
-  id="processingSection"
-  hidden
->
-
-<h2>⚙️ Processing</h2>
-
-<p id="statusText">
-AI က Video ကိုလုပ်ဆောင်နေပါတယ်...
+<p id="status">
+Processing...
 </p>
 
 <div class="progress">
-
 <div
-  id="progressBar"
-  class="progressBar"
+id="progressBar"
+class="progressBar"
 ></div>
-
 </div>
 
 <p id="progressText">
@@ -146,31 +81,126 @@ AI က Video ကိုလုပ်ဆောင်နေပါတယ်...
 </section>
 
 
+<!-- AFTER VIDEO -->
 
 <section
-  class="card"
-  id="resultSection"
-  hidden
+class="card"
+id="afterSection"
+hidden
 >
 
-<h2>🎬 After Video</h2>
+<h2>🎬 After Video Preview</h2>
+
+<p class="small">
+မူရင်းစာတန်းကို Blur လုပ်ထားပြီး
+မြန်မာအသံ + မြန်မာစာတန်း ထည့်ထားပါတယ်။
+</p>
 
 <video
-  id="resultVideo"
-  controls
-  playsinline
+id="afterVideo"
+controls
+playsinline
+></video>
+
+
+<hr>
+
+
+<h2>🎚️ Subtitle Settings</h2>
+
+
+<label>
+စာတန်းနေရာ
+</label>
+
+<select id="position">
+
+<option value="15">
+အပေါ်
+</option>
+
+<option value="50">
+အလယ်
+</option>
+
+<option value="82" selected>
+အောက်
+</option>
+
+</select>
+
+
+<label>
+စာတန်းအရွယ်အစား
+</label>
+
+<input
+id="fontSize"
+type="range"
+min="32"
+max="90"
+value="58"
+>
+
+<p>
+Size:
+<span id="fontSizeValue">
+58
+</span>
+</p>
+
+
+<label>
+စာတန်းအရောင်
+</label>
+
+<select id="color">
+
+<option value="&H00FFFFFF">
+အဖြူ
+</option>
+
+<option value="&H0000FFFF">
+အဝါ
+</option>
+
+<option value="&H0000FF00">
+အစိမ်း
+</option>
+
+</select>
+
+
+<button
+id="applyButton"
+>
+🎬 Apply & Create MP4
+</button>
+
+</section>
+
+
+<section
+class="card"
+id="finalSection"
+hidden
+>
+
+<h2>✅ Final MP4</h2>
+
+<video
+id="finalVideo"
+controls
+playsinline
 ></video>
 
 
 <a
-  id="downloadButton"
-  class="downloadButton"
-  href="#"
-  download="movie-recap-ai.mp4"
+id="downloadButton"
+class="downloadButton"
+download="movie-recap-ai.mp4"
 >
-
 ⬇️ Download MP4
-
 </a>
 
 </section>
@@ -178,9 +208,7 @@ AI က Video ကိုလုပ်ဆောင်နေပါတယ်...
 
 </main>
 
-
 <script src="script.js"></script>
 
 </body>
-
 </html>
