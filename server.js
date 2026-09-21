@@ -82,17 +82,17 @@ app.post("/upload", upload.single("video"), async (req, res) => {
 Movie recap အတွက် အရေးကြီးတဲ့
 အဖြစ်အပျက်တွေကို မြန်မာဘာသာနဲ့
 အစဉ်လိုက် ရှင်းပြပါ။
-
+မြန်မာအသံထဲ့ပေးပါ 
 - မြန်မာလိုရေးပါ
-- နားလည်လွယ်အောင်ရေးပါ
+- နားလည်လယ်အောင်ရေးပါ
 - အရေးကြီးတဲ့ scene တွေကိုပဲ ရွေးပါ
 - Video ထဲမှာ မရှိတဲ့အကြောင်းအရာ မထည့်ပါနဲ့
           `
         },
-        {
-          type: "video",
-          uri: myFile.uri,
-          mimeType: mimeType
+        {         
+  type: "video",
+  uri: myFile.uri,
+  mime_type: mimeType
         }
       ]
     });
