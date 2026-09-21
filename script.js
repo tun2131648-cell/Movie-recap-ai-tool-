@@ -1,246 +1,428 @@
-const videoInput = document.getElementById("videoInput");
-const fileName = document.getElementById("fileName");
-const previewSection = document.getElementById("previewSection");
-const videoPreview = document.getElementById("videoPreview");
+const API =
+  "https://movie-recap-ai-tool.onrender.com";
 
-const generateButton = document.getElementById("generateButton");
 
-const processingSection = document.getElementById("processingSection");
-const statusText = document.getElementById("statusText");
-const progressBar = document.getElementById("progressBar");
-const progressText = document.getElementById("progressText");
+const videoInput =
+  document.getElementById(
+    "videoInput"
+  );
 
-const resultSection = document.getElementById("resultSection");
-const resultVideo = document.getElementById("resultVideo");
-const downloadButton = document.getElementById("downloadButton");
+
+const fileName =
+  document.getElementById(
+    "fileName"
+  );
+
+
+const previewSection =
+  document.getElementById(
+    "previewSection"
+  );
+
+
+const videoPreview =
+  document.getElementById(
+    "videoPreview"
+  );
+
+
+const customSection =
+  document.getElementById(
+    "customSection"
+  );
+
+
+const subtitleY =
+  document.getElementById(
+    "subtitleY"
+  );
+
+
+const positionValue =
+  document.getElementById(
+    "positionValue"
+  );
+
+
+const generateButton =
+  document.getElementById(
+    "generateButton"
+  );
+
+
+const processingSection =
+  document.getElementById(
+    "processingSection"
+  );
+
+
+const statusText =
+  document.getElementById(
+    "statusText"
+  );
+
+
+const progressBar =
+  document.getElementById(
+    "progressBar"
+  );
+
+
+const progressText =
+  document.getElementById(
+    "progressText"
+  );
+
+
+const resultSection =
+  document.getElementById(
+    "resultSection"
+  );
+
+
+const resultVideo =
+  document.getElementById(
+    "resultVideo"
+  );
+
+
+const downloadButton =
+  document.getElementById(
+    "downloadButton"
+  );
+
 
 let selectedFile = null;
-let videoObjectURL = null;
+
+let videoURL = null;
 
 
-// ===============================
-// VIDEO SELECT
-// ===============================
 
-videoInput.addEventListener("change", function () {
+/* Subtitle Position */
 
-  const file = videoInput.files[0];
+subtitleY.addEventListener(
+  "input",
+  () => {
 
-  if (!file) return;
+    positionValue.textContent =
+      subtitleY.value + "%";
 
-  selectedFile = file;
-
-  const fileSizeMB =
-    file.size / (1024 * 1024);
-
-  if (videoObjectURL) {
-    URL.revokeObjectURL(videoObjectURL);
   }
-
-  videoObjectURL =
-    URL.createObjectURL(file);
-
-  videoPreview.src =
-    videoObjectURL;
-
-  videoPreview.onloadedmetadata =
-    function () {
-
-      const duration =
-        videoPreview.duration;
-
-      const maxDuration =
-        5 * 60;
-
-      if (duration > maxDuration) {
-
-        alert(
-          "❌ Video က ၅ မိနစ်ထက် မကျော်ရပါ။"
-        );
-
-        videoInput.value = "";
-        selectedFile = null;
-
-        previewSection.hidden = true;
-
-        return;
-      }
-
-      const minutes =
-        Math.floor(duration / 60);
-
-      const seconds =
-        Math.floor(duration % 60);
-
-      fileName.textContent =
-        `📁 ${file.name} | ⏱️ ${minutes}:${String(seconds).padStart(2, "0")} | 💾 ${fileSizeMB.toFixed(1)} MB`;
-
-      previewSection.hidden = false;
-      resultSection.hidden = true;
-    };
-});
+);
 
 
-// ===============================
-// GENERATE
-// ===============================
+
+/* Video Select */
+
+videoInput.addEventListener(
+  "change",
+  () => {
+
+    const file =
+      videoInput.files[0];
+
+    if (!file) return;
+
+
+    selectedFile = file;
+
+
+    if (videoURL) {
+
+      URL.revokeObjectURL(
+        videoURL
+      );
+
+    }
+
+
+    videoURL =
+      URL.createObjectURL(
+        file
+      );
+
+
+    videoPreview.src =
+      videoURL;
+
+
+    videoPreview.onloadedmetadata =
+      () => {
+
+        const duration =
+          videoPreview.duration;
+
+
+        if (duration > 300) {
+
+          alert(
+            "❌ Video က ၅ မိနစ်ထက် မကျော်ရပါ"
+          );
+
+
+          videoInput.value =
+            "";
+
+          selectedFile =
+            null;
+
+          previewSection.hidden =
+            true;
+
+          customSection.hidden =
+            true;
+
+          return;
+
+        }
+
+
+        const minutes =
+          Math.floor(
+            duration / 60
+          );
+
+
+        const seconds =
+          Math.floor(
+            duration % 60
+          );
+
+
+        const size =
+          (
+            file.size /
+            1024 /
+            1024
+          ).toFixed(1);
+
+
+        fileName.textContent =
+          `📁 ${file.name} | ⏱️ ${minutes}:${String(seconds).padStart(2,"0")} | 💾 ${size} MB`;
+
+
+        previewSection.hidden =
+          false;
+
+
+        customSection.hidden =
+          false;
+
+
+        resultSection.hidden =
+          true;
+
+      };
+
+  }
+);
+
+
+
+function progress(
+  number,
+  message
+) {
+
+  progressBar.style.width =
+    number + "%";
+
+
+  progressText.textContent =
+    number + "%";
+
+
+  statusText.textContent =
+    message;
+
+}
+
+
+
+/* Generate */
 
 generateButton.addEventListener(
   "click",
-  async function () {
+  async () => {
 
     if (!selectedFile) {
 
       alert(
-        "အရင်ဆုံး Video ရွေးပါ။"
+        "အရင်ဆုံး Video ရွေးပါ"
       );
 
       return;
+
     }
 
-    generateButton.disabled = true;
 
-    processingSection.hidden = false;
-    resultSection.hidden = true;
+    generateButton.disabled =
+      true;
 
-    progressBar.style.width = "5%";
-    progressText.textContent = "5%";
 
-    statusText.textContent =
-      "📤 Video ကို Server ဆီပို့နေပါတယ်...";
+    processingSection.hidden =
+      false;
+
+
+    resultSection.hidden =
+      true;
+
+
+    progress(
+      5,
+      "📤 Video ကို Server ဆီပို့နေပါတယ်..."
+    );
+
 
     const formData =
       new FormData();
+
 
     formData.append(
       "video",
       selectedFile
     );
 
+
+    formData.append(
+      "subtitleY",
+      subtitleY.value
+    );
+
+
+    let fakeProgress =
+      setInterval(
+        () => {
+
+          let current =
+            parseInt(
+              progressText.textContent
+            ) || 5;
+
+
+          if (current < 90) {
+
+            progress(
+              current + 5,
+              "🤖 AI Processing လုပ်နေပါတယ်..."
+            );
+
+          }
+
+        },
+        3000
+      );
+
+
     try {
-
-      // ===============================
-      // UPLOAD + AI PROCESSING
-      // ===============================
-
-      progressBar.style.width = "15%";
-      progressText.textContent = "15%";
-
-      statusText.textContent =
-        "🤖 AI Processing စတင်နေပါတယ်...";
 
       const response =
         await fetch(
-          "https://movie-recap-ai-tool.onrender.com/upload",
+          `${API}/upload`,
           {
             method: "POST",
             body: formData
           }
         );
 
-      progressBar.style.width = "95%";
-      progressText.textContent = "95%";
 
-      statusText.textContent =
-        "⏳ AI Result ကို လက်ခံနေပါတယ်...";
+      clearInterval(
+        fakeProgress
+      );
 
-      const data =
-        await response.json();
+
+      let data;
+
+
+      try {
+
+        data =
+          await response.json();
+
+      }
+
+      catch {
+
+        throw new Error(
+          "Server response မမှန်ပါ"
+        );
+
+      }
+
 
       if (
-        response.ok &&
-        data.success
+        !response.ok ||
+        !data.success
       ) {
-
-        progressBar.style.width =
-          "100%";
-
-        progressText.textContent =
-          "100%";
-
-        statusText.textContent =
-          "✅ AI Processing ပြီးပါပြီ!";
-
-        // Current backend returns recap text
-        if (data.result) {
-
-          resultSection.hidden =
-            false;
-
-          resultSection.scrollIntoView({
-            behavior: "smooth"
-          });
-
-          // Show recap text
-          resultVideo.style.display =
-            "none";
-
-          downloadButton.style.display =
-            "none";
-
-          const oldResult =
-            document.getElementById(
-              "recapText"
-            );
-
-          if (oldResult) {
-            oldResult.remove();
-          }
-
-          const recap =
-            document.createElement(
-              "div"
-            );
-
-          recap.id =
-            "recapText";
-
-          recap.style.marginTop =
-            "15px";
-
-          recap.style.padding =
-            "15px";
-
-          recap.style.background =
-            "#0f1219";
-
-          recap.style.borderRadius =
-            "12px";
-
-          recap.style.lineHeight =
-            "1.8";
-
-          recap.textContent =
-            data.result;
-
-          resultSection.appendChild(
-            recap
-          );
-        }
-
-      } else {
 
         throw new Error(
           data.error ||
           "Processing မအောင်မြင်ပါ"
         );
+
       }
 
-    } catch (error) {
 
-      progressBar.style.width =
-        "0%";
+      progress(
+        100,
+        "✅ Final MP4 ပြီးပါပြီ!"
+      );
 
-      progressText.textContent =
-        "0%";
 
-      statusText.textContent =
-        "❌ " + error.message;
+      resultSection.hidden =
+        false;
 
-    } finally {
+
+      resultVideo.src =
+        data.downloadUrl;
+
+
+      downloadButton.href =
+        data.downloadUrl;
+
+
+      downloadButton.download =
+        "movie-recap-ai.mp4";
+
+
+      resultVideo.load();
+
+
+      setTimeout(
+        () => {
+
+          resultSection.scrollIntoView({
+            behavior: "smooth"
+          });
+
+        },
+        300
+      );
+
+
+    }
+
+    catch (error) {
+
+      clearInterval(
+        fakeProgress
+      );
+
+
+      progress(
+        0,
+        "❌ " + error.message
+      );
+
+    }
+
+
+    finally {
 
       generateButton.disabled =
         false;
+
     }
+
   }
 );
