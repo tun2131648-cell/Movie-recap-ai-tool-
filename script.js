@@ -1,64 +1,37 @@
 const videoInput = document.getElementById("videoInput");
 const fileName = document.getElementById("fileName");
+const previewSection = document.getElementById("previewSection");
+const videoPreview = document.getElementById("videoPreview");
 
-const previewSection =
-  document.getElementById("previewSection");
+const generateButton = document.getElementById("generateButton");
 
-const videoPreview =
-  document.getElementById("videoPreview");
+const processingSection = document.getElementById("processingSection");
+const statusText = document.getElementById("statusText");
+const progressBar = document.getElementById("progressBar");
+const progressText = document.getElementById("progressText");
 
-const generateButton =
-  document.getElementById("generateButton");
-
-const processingSection =
-  document.getElementById("processingSection");
-
-const statusText =
-  document.getElementById("statusText");
-
-const progressBar =
-  document.getElementById("progressBar");
-
-const progressText =
-  document.getElementById("progressText");
-
-const resultSection =
-  document.getElementById("resultSection");
-
-const resultVideo =
-  document.getElementById("resultVideo");
-
-const downloadButton =
-  document.getElementById("downloadButton");
-
+const resultSection = document.getElementById("resultSection");
+const resultVideo = document.getElementById("resultVideo");
+const downloadButton = document.getElementById("downloadButton");
 
 let selectedFile = null;
 let videoObjectURL = null;
 
 
-/* =========================
-   VIDEO SELECT
-========================= */
+// ===============================
+// VIDEO SELECT
+// ===============================
 
 videoInput.addEventListener("change", function () {
 
   const file = videoInput.files[0];
 
-  if (!file) {
-    return;
-  }
-
+  if (!file) return;
 
   selectedFile = file;
 
-
-  /* File size */
-
   const fileSizeMB =
     file.size / (1024 * 1024);
-
-
-  /* Create temporary video */
 
   if (videoObjectURL) {
     URL.revokeObjectURL(videoObjectURL);
@@ -70,19 +43,14 @@ videoInput.addEventListener("change", function () {
   videoPreview.src =
     videoObjectURL;
 
-
-  /* Check duration */
-
   videoPreview.onloadedmetadata =
     function () {
 
       const duration =
         videoPreview.duration;
 
-
       const maxDuration =
         5 * 60;
-
 
       if (duration > maxDuration) {
 
@@ -91,15 +59,12 @@ videoInput.addEventListener("change", function () {
         );
 
         videoInput.value = "";
-
         selectedFile = null;
 
         previewSection.hidden = true;
 
         return;
-
       }
-
 
       const minutes =
         Math.floor(duration / 60);
@@ -107,26 +72,18 @@ videoInput.addEventListener("change", function () {
       const seconds =
         Math.floor(duration % 60);
 
-
       fileName.textContent =
         `📁 ${file.name} | ⏱️ ${minutes}:${String(seconds).padStart(2, "0")} | 💾 ${fileSizeMB.toFixed(1)} MB`;
 
-
-      previewSection.hidden =
-        false;
-
-
-      resultSection.hidden =
-        true;
-
+      previewSection.hidden = false;
+      resultSection.hidden = true;
     };
-
 });
 
 
-/* =========================
-   GENERATE
-========================= */
+// ===============================
+// GENERATE
+// ===============================
 
 generateButton.addEventListener(
   "click",
@@ -139,77 +96,38 @@ generateButton.addEventListener(
       );
 
       return;
-
     }
 
+    generateButton.disabled = true;
 
-    generateButton.disabled =
-      true;
+    processingSection.hidden = false;
+    resultSection.hidden = true;
 
-
-    processingSection.hidden =
-      false;
-
-
-    resultSection.hidden =
-      true;
-
-
-    progressBar.style.width =
-      "0%";
-
-    progressText.textContent =
-      "0%";
-
+    progressBar.style.width = "5%";
+    progressText.textContent = "5%";
 
     statusText.textContent =
-      "📤 Video Upload လုပ်နေပါတယ်...";
-
+      "📤 Video ကို Server ဆီပို့နေပါတယ်...";
 
     const formData =
       new FormData();
-
 
     formData.append(
       "video",
       selectedFile
     );
 
-
-    /*
-      Processing progress
-
-      ၂ မိနစ် target အတွက်
-      UI progress ကို 90% အထိ
-      ဖြည်းဖြည်းတက်စေမယ်။
-    */
-
-    let progress = 0;
-
-
-    const progressTimer =
-      setInterval(function () {
-
-        if (progress < 90) {
-
-          progress += 1;
-
-          progressBar.style.width =
-            progress + "%";
-
-          progressText.textContent =
-            progress + "%";
-
-        }
-
-      }, 1300);
-
-
     try {
 
-      statusText.textContent =
-        "🤖 AI က Video ကို Processing လုပ်နေပါတယ်...";
+      // ===============================
+      // UPLOAD + AI PROCESSING
+      // ===============================
 
+      progressBar.style.width = "15%";
+      progressText.textContent = "15%";
+
+      statusText.textContent =
+        "🤖 AI Processing စတင်နေပါတယ်...";
 
       const response =
         await fetch(
@@ -220,20 +138,18 @@ generateButton.addEventListener(
           }
         );
 
+      progressBar.style.width = "95%";
+      progressText.textContent = "95%";
+
+      statusText.textContent =
+        "⏳ AI Result ကို လက်ခံနေပါတယ်...";
 
       const data =
         await response.json();
 
-
-      clearInterval(
-        progressTimer
-      );
-
-
       if (
         response.ok &&
-        data.success &&
-        data.downloadUrl
+        data.success
       ) {
 
         progressBar.style.width =
@@ -242,43 +158,65 @@ generateButton.addEventListener(
         progressText.textContent =
           "100%";
 
-
         statusText.textContent =
-          "✅ Processing ပြီးပါပြီ!";
+          "✅ AI Processing ပြီးပါပြီ!";
 
+        // Current backend returns recap text
+        if (data.result) {
 
-        /*
-          After Video Preview
-        */
+          resultSection.hidden =
+            false;
 
-        resultVideo.src =
-          data.downloadUrl;
+          resultSection.scrollIntoView({
+            behavior: "smooth"
+          });
 
+          // Show recap text
+          resultVideo.style.display =
+            "none";
 
-        resultVideo.load();
+          downloadButton.style.display =
+            "none";
 
+          const oldResult =
+            document.getElementById(
+              "recapText"
+            );
 
-        /*
-          Download button
-        */
+          if (oldResult) {
+            oldResult.remove();
+          }
 
-        downloadButton.href =
-          data.downloadUrl;
+          const recap =
+            document.createElement(
+              "div"
+            );
 
+          recap.id =
+            "recapText";
 
-        resultSection.hidden =
-          false;
+          recap.style.marginTop =
+            "15px";
 
+          recap.style.padding =
+            "15px";
 
-        /*
-          After Video နေရာကို
-          အလိုအလျောက် scroll
-        */
+          recap.style.background =
+            "#0f1219";
 
-        resultSection.scrollIntoView({
-          behavior: "smooth"
-        });
+          recap.style.borderRadius =
+            "12px";
 
+          recap.style.lineHeight =
+            "1.8";
+
+          recap.textContent =
+            data.result;
+
+          resultSection.appendChild(
+            recap
+          );
+        }
 
       } else {
 
@@ -286,16 +224,9 @@ generateButton.addEventListener(
           data.error ||
           "Processing မအောင်မြင်ပါ"
         );
-
       }
 
-
     } catch (error) {
-
-      clearInterval(
-        progressTimer
-      );
-
 
       progressBar.style.width =
         "0%";
@@ -303,15 +234,13 @@ generateButton.addEventListener(
       progressText.textContent =
         "0%";
 
-
       statusText.textContent =
         "❌ " + error.message;
 
+    } finally {
+
+      generateButton.disabled =
+        false;
     }
-
-
-    generateButton.disabled =
-      false;
-
   }
 );
