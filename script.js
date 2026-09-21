@@ -7,84 +7,85 @@ const videoInput =
     "videoInput"
   );
 
-
 const fileName =
   document.getElementById(
     "fileName"
   );
 
-
-const previewSection =
+const originalSection =
   document.getElementById(
-    "previewSection"
+    "originalSection"
   );
 
-
-const videoPreview =
+const originalVideo =
   document.getElementById(
-    "videoPreview"
+    "originalVideo"
   );
-
-
-const customSection =
-  document.getElementById(
-    "customSection"
-  );
-
-
-const subtitleY =
-  document.getElementById(
-    "subtitleY"
-  );
-
-
-const positionValue =
-  document.getElementById(
-    "positionValue"
-  );
-
-
-const generateButton =
-  document.getElementById(
-    "generateButton"
-  );
-
 
 const processingSection =
   document.getElementById(
     "processingSection"
   );
 
-
-const statusText =
+const status =
   document.getElementById(
-    "statusText"
+    "status"
   );
-
 
 const progressBar =
   document.getElementById(
     "progressBar"
   );
 
-
 const progressText =
   document.getElementById(
     "progressText"
   );
 
-
-const resultSection =
+const afterSection =
   document.getElementById(
-    "resultSection"
+    "afterSection"
   );
 
-
-const resultVideo =
+const afterVideo =
   document.getElementById(
-    "resultVideo"
+    "afterVideo"
   );
 
+const position =
+  document.getElementById(
+    "position"
+  );
+
+const fontSize =
+  document.getElementById(
+    "fontSize"
+  );
+
+const fontSizeValue =
+  document.getElementById(
+    "fontSizeValue"
+  );
+
+const color =
+  document.getElementById(
+    "color"
+  );
+
+const applyButton =
+  document.getElementById(
+    "applyButton"
+  );
+
+const finalSection =
+  document.getElementById(
+    "finalSection"
+  );
+
+const finalVideo =
+  document.getElementById(
+    "finalVideo"
+  );
 
 const downloadButton =
   document.getElementById(
@@ -94,25 +95,23 @@ const downloadButton =
 
 let selectedFile = null;
 
-let videoURL = null;
+let jobId = null;
 
 
+/* SIZE */
 
-/* Subtitle Position */
-
-subtitleY.addEventListener(
+fontSize.addEventListener(
   "input",
   () => {
 
-    positionValue.textContent =
-      subtitleY.value + "%";
+    fontSizeValue.textContent =
+      fontSize.value;
 
   }
 );
 
 
-
-/* Video Select */
+/* VIDEO SELECT */
 
 videoInput.addEventListener(
   "change",
@@ -124,41 +123,39 @@ videoInput.addEventListener(
     if (!file) return;
 
 
-    selectedFile = file;
+    selectedFile =
+      file;
 
 
-    if (videoURL) {
-
-      URL.revokeObjectURL(
-        videoURL
-      );
-
-    }
-
-
-    videoURL =
+    originalVideo.src =
       URL.createObjectURL(
         file
       );
 
 
-    videoPreview.src =
-      videoURL;
+    originalSection.hidden =
+      false;
 
 
-    videoPreview.onloadedmetadata =
+    afterSection.hidden =
+      true;
+
+
+    finalSection.hidden =
+      true;
+
+
+    originalVideo.onloadedmetadata =
       () => {
 
-        const duration =
-          videoPreview.duration;
-
-
-        if (duration > 300) {
+        if (
+          originalVideo.duration >
+          300
+        ) {
 
           alert(
             "❌ Video က ၅ မိနစ်ထက် မကျော်ရပါ"
           );
-
 
           videoInput.value =
             "";
@@ -166,10 +163,7 @@ videoInput.addEventListener(
           selectedFile =
             null;
 
-          previewSection.hidden =
-            true;
-
-          customSection.hidden =
+          originalSection.hidden =
             true;
 
           return;
@@ -179,38 +173,20 @@ videoInput.addEventListener(
 
         const minutes =
           Math.floor(
-            duration / 60
+            originalVideo.duration /
+            60
           );
 
 
         const seconds =
           Math.floor(
-            duration % 60
+            originalVideo.duration %
+            60
           );
 
 
-        const size =
-          (
-            file.size /
-            1024 /
-            1024
-          ).toFixed(1);
-
-
         fileName.textContent =
-          `📁 ${file.name} | ⏱️ ${minutes}:${String(seconds).padStart(2,"0")} | 💾 ${size} MB`;
-
-
-        previewSection.hidden =
-          false;
-
-
-        customSection.hidden =
-          false;
-
-
-        resultSection.hidden =
-          true;
+          `📁 ${file.name} | ⏱️ ${minutes}:${String(seconds).padStart(2,"0")}`;
 
       };
 
@@ -218,37 +194,44 @@ videoInput.addEventListener(
 );
 
 
+/* PROGRESS */
 
-function progress(
-  number,
+function setProgress(
+  percent,
   message
 ) {
 
   progressBar.style.width =
-    number + "%";
-
+    percent + "%";
 
   progressText.textContent =
-    number + "%";
+    percent + "%";
 
-
-  statusText.textContent =
+  status.textContent =
     message;
 
 }
 
 
+/* GENERATE PREVIEW */
 
-/* Generate */
+const generateButton =
+  document.createElement(
+    "button"
+  );
 
-generateButton.addEventListener(
-  "click",
+
+generateButton.textContent =
+  "🤖 AI Generate";
+
+
+generateButton.onclick =
   async () => {
 
     if (!selectedFile) {
 
       alert(
-        "အရင်ဆုံး Video ရွေးပါ"
+        "Video အရင်ရွေးပါ"
       );
 
       return;
@@ -264,46 +247,36 @@ generateButton.addEventListener(
       false;
 
 
-    resultSection.hidden =
-      true;
-
-
-    progress(
+    setProgress(
       5,
-      "📤 Video ကို Server ဆီပို့နေပါတယ်..."
+      "📤 Video upload လုပ်နေပါတယ်..."
     );
 
 
-    const formData =
+    const form =
       new FormData();
 
 
-    formData.append(
+    form.append(
       "video",
       selectedFile
     );
 
 
-    formData.append(
-      "subtitleY",
-      subtitleY.value
-    );
-
-
-    let fakeProgress =
+    let fake =
       setInterval(
         () => {
 
-          let current =
+          let p =
             parseInt(
               progressText.textContent
             ) || 5;
 
 
-          if (current < 90) {
+          if (p < 90) {
 
-            progress(
-              current + 5,
+            setProgress(
+              p + 5,
               "🤖 AI Processing လုပ်နေပါတယ်..."
             );
 
@@ -321,33 +294,16 @@ generateButton.addEventListener(
           `${API}/upload`,
           {
             method: "POST",
-            body: formData
+            body: form
           }
         );
 
 
-      clearInterval(
-        fakeProgress
-      );
+      clearInterval(fake);
 
 
-      let data;
-
-
-      try {
-
-        data =
-          await response.json();
-
-      }
-
-      catch {
-
-        throw new Error(
-          "Server response မမှန်ပါ"
-        );
-
-      }
+      const data =
+        await response.json();
 
 
       if (
@@ -357,61 +313,49 @@ generateButton.addEventListener(
 
         throw new Error(
           data.error ||
-          "Processing မအောင်မြင်ပါ"
+          "Processing failed"
         );
 
       }
 
 
-      progress(
+      jobId =
+        data.jobId;
+
+
+      setProgress(
         100,
-        "✅ Final MP4 ပြီးပါပြီ!"
+        "✅ After Video Preview ပြီးပါပြီ"
       );
 
 
-      resultSection.hidden =
+      afterVideo.src =
+        data.previewUrl;
+
+
+      afterSection.hidden =
         false;
 
 
-      resultVideo.src =
-        data.downloadUrl;
+      afterVideo.load();
 
 
-      downloadButton.href =
-        data.downloadUrl;
-
-
-      downloadButton.download =
-        "movie-recap-ai.mp4";
-
-
-      resultVideo.load();
-
-
-      setTimeout(
-        () => {
-
-          resultSection.scrollIntoView({
-            behavior: "smooth"
-          });
-
-        },
-        300
-      );
+      afterSection.scrollIntoView({
+        behavior: "smooth"
+      });
 
 
     }
 
     catch (error) {
 
-      clearInterval(
-        fakeProgress
-      );
+      clearInterval(fake);
 
 
-      progress(
+      setProgress(
         0,
-        "❌ " + error.message
+        "❌ " +
+        error.message
       );
 
     }
@@ -420,6 +364,147 @@ generateButton.addEventListener(
     finally {
 
       generateButton.disabled =
+        false;
+
+    }
+
+  };
+
+
+/* Put Generate button */
+
+document
+  .getElementById("originalSection")
+  .after(generateButton);
+
+
+generateButton.className =
+  "generateButton";
+
+
+/* FINAL MP4 */
+
+applyButton.addEventListener(
+  "click",
+  async () => {
+
+    if (!jobId) {
+
+      alert(
+        "After Video မရသေးပါ"
+      );
+
+      return;
+
+    }
+
+
+    applyButton.disabled =
+      true;
+
+
+    processingSection.hidden =
+      false;
+
+
+    setProgress(
+      10,
+      "🎬 Final MP4 ပြန် render လုပ်နေပါတယ်..."
+    );
+
+
+    try {
+
+      const response =
+        await fetch(
+          `${API}/render`,
+          {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+
+              jobId:
+                jobId,
+
+              position:
+                position.value,
+
+              fontSize:
+                fontSize.value,
+
+              color:
+                color.value
+
+            })
+
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+
+        throw new Error(
+          data.error ||
+          "Final render failed"
+        );
+
+      }
+
+
+      setProgress(
+        100,
+        "✅ Final MP4 ပြီးပါပြီ!"
+      );
+
+
+      finalSection.hidden =
+        false;
+
+
+      finalVideo.src =
+        data.downloadUrl;
+
+
+      downloadButton.href =
+        data.downloadUrl;
+
+
+      finalVideo.load();
+
+
+      finalSection.scrollIntoView({
+        behavior: "smooth"
+      });
+
+    }
+
+    catch (error) {
+
+      setProgress(
+        0,
+        "❌ " +
+        error.message
+      );
+
+    }
+
+
+    finally {
+
+      applyButton.disabled =
         false;
 
     }
