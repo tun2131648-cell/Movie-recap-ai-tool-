@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="my">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
 <title>Movie Recap AI</title>
 
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 
 <body>
@@ -68,10 +67,12 @@ Processing...
 </p>
 
 <div class="progress">
+
 <div
 id="progressBar"
 class="progressBar"
 ></div>
+
 </div>
 
 <p id="progressText">
@@ -81,19 +82,22 @@ class="progressBar"
 </section>
 
 
-<!-- AFTER VIDEO -->
-
 <section
 class="card"
 id="afterSection"
 hidden
 >
 
-<h2>🎬 After Video Preview</h2>
+<h2>
+🎬 After Video Preview
+</h2>
 
 <p class="small">
+
 မူရင်းစာတန်းကို Blur လုပ်ထားပြီး
-မြန်မာအသံ + မြန်မာစာတန်း ထည့်ထားပါတယ်။
+မြန်မာအသံ + မြန်မာစာတန်း
+ထည့်ထားပါတယ်။
+
 </p>
 
 <video
@@ -106,7 +110,9 @@ playsinline
 <hr>
 
 
-<h2>🎚️ Subtitle Settings</h2>
+<h2>
+🎚️ Subtitle Settings
+</h2>
 
 
 <label>
@@ -123,7 +129,10 @@ playsinline
 အလယ်
 </option>
 
-<option value="82" selected>
+<option
+value="82"
+selected
+>
 အောက်
 </option>
 
@@ -171,9 +180,7 @@ Size:
 </select>
 
 
-<button
-id="applyButton"
->
+<button id="applyButton">
 🎬 Apply & Create MP4
 </button>
 
@@ -186,7 +193,9 @@ id="finalSection"
 hidden
 >
 
-<h2>✅ Final MP4</h2>
+<h2>
+✅ Final MP4
+</h2>
 
 <video
 id="finalVideo"
@@ -194,21 +203,5 @@ controls
 playsinline
 ></video>
 
-
 <a
-id="downloadButton"
-class="downloadButton"
-download="movie-recap-ai.mp4"
->
-⬇️ Download MP4
-</a>
-
-</section>
-
-
-</main>
-
-<script src="script.js?v=2"></script>
-
-</body>
-</html>
+id="download
