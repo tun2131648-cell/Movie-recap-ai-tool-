@@ -1,117 +1,78 @@
-const API =
-  "https://movie-recap-ai-tool.onrender.com";
+const API = "https://movie-recap-ai-tool.onrender.com";
 
-
-const videoInput =
-  document.getElementById(
-    "videoInput"
-  );
-
-const fileName =
-  document.getElementById(
-    "fileName"
-  );
+const videoInput = document.getElementById("videoInput");
+const fileName = document.getElementById("fileName");
 
 const originalSection =
-  document.getElementById(
-    "originalSection"
-  );
+  document.getElementById("originalSection");
 
 const originalVideo =
-  document.getElementById(
-    "originalVideo"
-  );
+  document.getElementById("originalVideo");
 
 const processingSection =
-  document.getElementById(
-    "processingSection"
-  );
+  document.getElementById("processingSection");
 
 const status =
-  document.getElementById(
-    "status"
-  );
+  document.getElementById("status");
 
 const progressBar =
-  document.getElementById(
-    "progressBar"
-  );
+  document.getElementById("progressBar");
 
 const progressText =
-  document.getElementById(
-    "progressText"
-  );
+  document.getElementById("progressText");
 
 const afterSection =
-  document.getElementById(
-    "afterSection"
-  );
+  document.getElementById("afterSection");
 
 const afterVideo =
-  document.getElementById(
-    "afterVideo"
-  );
+  document.getElementById("afterVideo");
 
 const position =
-  document.getElementById(
-    "position"
-  );
+  document.getElementById("position");
 
 const fontSize =
-  document.getElementById(
-    "fontSize"
-  );
+  document.getElementById("fontSize");
 
 const fontSizeValue =
-  document.getElementById(
-    "fontSizeValue"
-  );
+  document.getElementById("fontSizeValue");
 
 const color =
-  document.getElementById(
-    "color"
-  );
+  document.getElementById("color");
 
 const applyButton =
-  document.getElementById(
-    "applyButton"
-  );
+  document.getElementById("applyButton");
 
 const finalSection =
-  document.getElementById(
-    "finalSection"
-  );
+  document.getElementById("finalSection");
 
 const finalVideo =
-  document.getElementById(
-    "finalVideo"
-  );
+  document.getElementById("finalVideo");
 
 const downloadButton =
-  document.getElementById(
-    "downloadButton"
-  );
+  document.getElementById("downloadButton");
 
 
 let selectedFile = null;
-
 let jobId = null;
+let statusTimer = null;
 
 
-/* SIZE */
+// ===============================
+// Font Size
+// ===============================
 
 fontSize.addEventListener(
   "input",
   () => {
-
     fontSizeValue.textContent =
       fontSize.value;
-
   }
 );
 
 
-/* VIDEO SELECT */
+// ===============================
+// Select Video
+// ===============================
 
 videoInput.addEventListener(
   "change",
@@ -122,28 +83,16 @@ videoInput.addEventListener(
 
     if (!file) return;
 
-
-    selectedFile =
-      file;
-
+    selectedFile = file;
 
     originalVideo.src =
-      URL.createObjectURL(
-        file
-      );
+      URL.createObjectURL(file);
 
+    originalSection.hidden = false;
 
-    originalSection.hidden =
-      false;
+    afterSection.hidden = true;
 
-
-    afterSection.hidden =
-      true;
-
-
-    finalSection.hidden =
-      true;
-
+    finalSection.hidden = true;
 
     originalVideo.onloadedmetadata =
       () => {
@@ -157,19 +106,15 @@ videoInput.addEventListener(
             "❌ Video က ၅ မိနစ်ထက် မကျော်ရပါ"
           );
 
-          videoInput.value =
-            "";
+          videoInput.value = "";
 
-          selectedFile =
-            null;
+          selectedFile = null;
 
           originalSection.hidden =
             true;
 
           return;
-
         }
-
 
         const minutes =
           Math.floor(
@@ -177,24 +122,40 @@ videoInput.addEventListener(
             60
           );
 
-
         const seconds =
           Math.floor(
             originalVideo.duration %
             60
           );
 
-
         fileName.textContent =
           `📁 ${file.name} | ⏱️ ${minutes}:${String(seconds).padStart(2,"0")}`;
-
       };
-
   }
 );
 
 
-/* PROGRESS */
+// ===============================
+// Generate Button
+// ===============================
+
+const generateButton =
+  document.createElement("button");
+
+generateButton.textContent =
+  "🤖 AI Generate";
+
+generateButton.className =
+  "generateButton";
+
+originalSection.after(
+  generateButton
+);
+
+
+// ===============================
+// Progress
+// ===============================
 
 function setProgress(
   percent,
@@ -209,21 +170,136 @@ function setProgress(
 
   status.textContent =
     message;
-
 }
 
 
-/* GENERATE PREVIEW */
+// ===============================
+// Check Job Status
+// ===============================
 
-const generateButton =
-  document.createElement(
-    "button"
-  );
+function startStatusChecking() {
+
+  if (statusTimer) {
+
+    clearInterval(
+      statusTimer
+    );
+  }
+
+  statusTimer =
+    setInterval(
+      async () => {
+
+        try {
+
+          const response =
+            await fetch(
+              `${API}/status/${jobId}`
+            );
+
+          const data =
+            await response.json();
+
+          if (!data.success) {
+            return;
+          }
 
 
-generateButton.textContent =
-  "🤖 AI Generate";
+          setProgress(
+            data.progress || 0,
+            data.status ||
+              "🤖 Processing..."
+          );
 
+
+          // ======================
+          // Preview Ready
+          // ======================
+
+          if (
+            data.state ===
+            "preview_ready"
+          ) {
+
+            clearInterval(
+              statusTimer
+            );
+
+            statusTimer =
+              null;
+
+            afterVideo.src =
+              API +
+              data.previewUrl;
+
+            afterSection.hidden =
+              false;
+
+            processingSection.hidden =
+              false;
+
+            afterVideo.load();
+
+            afterSection.scrollIntoView({
+              behavior: "smooth"
+            });
+
+            generateButton.disabled =
+              false;
+
+            return;
+          }
+
+
+          // ======================
+          // Error
+          // ======================
+
+          if (
+            data.state ===
+            "error"
+          ) {
+
+            clearInterval(
+              statusTimer
+            );
+
+            statusTimer =
+              null;
+
+            setProgress(
+              0,
+              "❌ " +
+              (
+                data.error ||
+                "Processing မအောင်မြင်ပါ"
+              )
+            );
+
+            generateButton.disabled =
+              false;
+
+            return;
+          }
+
+        } catch (error) {
+
+          console.log(
+            "Status error:",
+            error
+          );
+
+        }
+
+      },
+      3000
+    );
+}
+
+
+// ===============================
+// Upload + AI Generate
+// ===============================
 
 generateButton.onclick =
   async () => {
@@ -235,16 +311,20 @@ generateButton.onclick =
       );
 
       return;
-
     }
 
 
     generateButton.disabled =
       true;
 
-
     processingSection.hidden =
       false;
+
+    afterSection.hidden =
+      true;
+
+    finalSection.hidden =
+      true;
 
 
     setProgress(
@@ -256,35 +336,10 @@ generateButton.onclick =
     const form =
       new FormData();
 
-
     form.append(
       "video",
       selectedFile
     );
-
-
-    let fake =
-      setInterval(
-        () => {
-
-          let p =
-            parseInt(
-              progressText.textContent
-            ) || 5;
-
-
-          if (p < 90) {
-
-            setProgress(
-              p + 5,
-              "🤖 AI Processing လုပ်နေပါတယ်..."
-            );
-
-          }
-
-        },
-        3000
-      );
 
 
     try {
@@ -299,9 +354,6 @@ generateButton.onclick =
         );
 
 
-      clearInterval(fake);
-
-
       const data =
         await response.json();
 
@@ -313,9 +365,8 @@ generateButton.onclick =
 
         throw new Error(
           data.error ||
-          "Processing failed"
+          "Upload failed"
         );
-
       }
 
 
@@ -324,33 +375,17 @@ generateButton.onclick =
 
 
       setProgress(
-        100,
-        "✅ After Video Preview ပြီးပါပြီ"
+        8,
+        "🤖 AI Processing စတင်နေပါတယ်..."
       );
 
 
-      afterVideo.src =
-        data.previewUrl;
+      startStatusChecking();
 
 
-      afterSection.hidden =
-        false;
+    } catch (error) {
 
-
-      afterVideo.load();
-
-
-      afterSection.scrollIntoView({
-        behavior: "smooth"
-      });
-
-
-    }
-
-    catch (error) {
-
-      clearInterval(fake);
-
+      console.error(error);
 
       setProgress(
         0,
@@ -358,31 +393,15 @@ generateButton.onclick =
         error.message
       );
 
-    }
-
-
-    finally {
-
       generateButton.disabled =
         false;
-
     }
-
-  };
-
-
-/* Put Generate button */
-
-document
-  .getElementById("originalSection")
-  .after(generateButton);
+};
 
 
-generateButton.className =
-  "generateButton";
-
-
-/* FINAL MP4 */
+// ===============================
+// Create Final MP4
+// ===============================
 
 applyButton.addEventListener(
   "click",
@@ -395,13 +414,11 @@ applyButton.addEventListener(
       );
 
       return;
-
     }
 
 
     applyButton.disabled =
       true;
-
 
     processingSection.hidden =
       false;
@@ -419,7 +436,6 @@ applyButton.addEventListener(
         await fetch(
           `${API}/render`,
           {
-
             method: "POST",
 
             headers: {
@@ -427,22 +443,20 @@ applyButton.addEventListener(
                 "application/json"
             },
 
-            body: JSON.stringify({
+            body:
+              JSON.stringify({
+                jobId:
+                  jobId,
 
-              jobId:
-                jobId,
+                position:
+                  position.value,
 
-              position:
-                position.value,
+                fontSize:
+                  fontSize.value,
 
-              fontSize:
-                fontSize.value,
-
-              color:
-                color.value
-
-            })
-
+                color:
+                  color.value
+              })
           }
         );
 
@@ -460,7 +474,6 @@ applyButton.addEventListener(
           data.error ||
           "Final render failed"
         );
-
       }
 
 
@@ -475,10 +488,12 @@ applyButton.addEventListener(
 
 
       finalVideo.src =
+        API +
         data.downloadUrl;
 
 
       downloadButton.href =
+        API +
         data.downloadUrl;
 
 
@@ -489,9 +504,10 @@ applyButton.addEventListener(
         behavior: "smooth"
       });
 
-    }
 
-    catch (error) {
+    } catch (error) {
+
+      console.error(error);
 
       setProgress(
         0,
@@ -499,10 +515,7 @@ applyButton.addEventListener(
         error.message
       );
 
-    }
-
-
-    finally {
+    } finally {
 
       applyButton.disabled =
         false;
@@ -510,4 +523,4 @@ applyButton.addEventListener(
     }
 
   }
-);
+);၏
