@@ -1,207 +1,259 @@
 <!DOCTYPE html>
 <html lang="my">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta charset="UTF-8">
 
-<title>Movie Recap AI</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-<link rel="stylesheet" href="style.css?v=3">
+  <title>Movie Recap AI</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css?v=4"
+  >
 </head>
+
 
 <body>
 
-<main class="container">
-
-<h1>🎬 Movie Recap AI</h1>
-
-<p class="subtitle">
-Video တင်ရုံနဲ့ Movie Recap MP4
-</p>
+  <main class="container">
 
 
-<section class="card">
+    <!-- TITLE -->
 
-<h2>📤 Upload Video</h2>
+    <h1>
+      🎬 Movie Recap AI
+    </h1>
 
-<input
-id="videoInput"
-type="file"
-accept="video/*"
->
-
-<p id="fileName">
-Video မရွေးရသေးပါ
-</p>
-
-</section>
+    <p class="subtitle">
+      Video တင်ရုံနဲ့ Movie Recap MP4
+    </p>
 
 
-<section
-class="card"
-id="originalSection"
-hidden
->
+    <!-- UPLOAD -->
 
-<h2>▶️ Original Video</h2>
+    <section class="card">
 
-<video
-id="originalVideo"
-controls
-playsinline
-></video>
+      <h2>
+        📤 Upload Video
+      </h2>
 
-</section>
+      <input
+        id="videoInput"
+        type="file"
+        accept="video/*"
+      >
 
+      <p id="fileName">
+        Video မရွေးရသေးပါ
+      </p>
 
-<section
-class="card"
-id="processingSection"
-hidden
->
-
-<h2>⚙️ AI Processing</h2>
-
-<p id="status">
-Processing...
-</p>
-
-<div class="progress">
-
-<div
-id="progressBar"
-class="progressBar"
-></div>
-
-</div>
-
-<p id="progressText">
-0%
-</p>
-
-</section>
+    </section>
 
 
-<section
-class="card"
-id="afterSection"
-hidden
->
+    <!-- ORIGINAL VIDEO -->
 
-<h2>
-🎬 After Video Preview
-</h2>
+    <section
+      class="card"
+      id="originalSection"
+      hidden
+    >
 
-<p class="small">
+      <h2>
+        ▶️ Original Video
+      </h2>
 
-မူရင်းစာတန်းကို Blur လုပ်ထားပြီး
-မြန်မာအသံ + မြန်မာစာတန်း
-ထည့်ထားပါတယ်။
+      <video
+        id="originalVideo"
+        controls
+        playsinline
+      ></video>
 
-</p>
-
-<video
-id="afterVideo"
-controls
-playsinline
-></video>
+    </section>
 
 
-<hr>
+    <!-- AI PROCESSING -->
+
+    <section
+      class="card"
+      id="processingSection"
+      hidden
+    >
+
+      <h2>
+        ⚙️ AI Processing
+      </h2>
+
+      <p id="status">
+        Processing...
+      </p>
+
+      <div class="progress">
+
+        <div
+          id="progressBar"
+          class="progressBar"
+        ></div>
+
+      </div>
+
+      <p id="progressText">
+        0%
+      </p>
+
+    </section>
 
 
-<h2>
-🎚️ Subtitle Settings
-</h2>
+    <!-- AFTER VIDEO -->
+
+    <section
+      class="card"
+      id="afterSection"
+      hidden
+    >
+
+      <h2>
+        🎬 After Video Preview
+      </h2>
+
+      <p class="small">
+        မူရင်းစာတန်းကို Blur လုပ်ထားပြီး
+        မြန်မာအသံ + မြန်မာစာတန်း
+        ထည့်ထားပါတယ်။
+      </p>
+
+      <video
+        id="afterVideo"
+        controls
+        playsinline
+      ></video>
 
 
-<label>
-စာတန်းနေရာ
-</label>
-
-<select id="position">
-
-<option value="15">
-အပေါ်
-</option>
-
-<option value="50">
-အလယ်
-</option>
-
-<option
-value="82"
-selected
->
-အောက်
-</option>
-
-</select>
+      <hr>
 
 
-<label>
-စာတန်းအရွယ်အစား
-</label>
+      <!-- SUBTITLE SETTINGS -->
 
-<input
-id="fontSize"
-type="range"
-min="32"
-max="90"
-value="58"
->
-
-<p>
-Size:
-<span id="fontSizeValue">
-58
-</span>
-</p>
+      <h2>
+        🎚️ Subtitle Settings
+      </h2>
 
 
-<label>
-စာတန်းအရောင်
-</label>
+      <label for="position">
+        စာတန်းနေရာ
+      </label>
 
-<select id="color">
+      <select id="position">
 
-<option value="&H00FFFFFF">
-အဖြူ
-</option>
+        <option value="15">
+          အပေါ်
+        </option>
 
-<option value="&H0000FFFF">
-အဝါ
-</option>
+        <option value="50">
+          အလယ်
+        </option>
 
-<option value="&H0000FF00">
-အစိမ်း
-</option>
+        <option
+          value="82"
+          selected
+        >
+          အောက်
+        </option>
 
-</select>
-
-
-<button id="applyButton">
-🎬 Apply & Create MP4
-</button>
-
-</section>
+      </select>
 
 
-<section
-class="card"
-id="finalSection"
-hidden
->
+      <label for="fontSize">
+        စာတန်းအရွယ်အစား
+      </label>
 
-<h2>
-✅ Final MP4
-</h2>
+      <input
+        id="fontSize"
+        type="range"
+        min="32"
+        max="90"
+        value="58"
+      >
 
-<video
-id="finalVideo"
-controls
-playsinline
-></video>
+      <p>
+        Size:
+        <span id="fontSizeValue">
+          58
+        </span>
+      </p>
 
-<a
-id="download
+
+      <label for="color">
+        စာတန်းအရောင်
+      </label>
+
+      <select id="color">
+
+        <option value="&H00FFFFFF">
+          အဖြူ
+        </option>
+
+        <option value="&H0000FFFF">
+          အဝါ
+        </option>
+
+        <option value="&H0000FF00">
+          အစိမ်း
+        </option>
+
+      </select>
+
+
+      <button
+        id="applyButton"
+        type="button"
+      >
+        🎬 Apply & Create MP4
+      </button>
+
+    </section>
+
+
+    <!-- FINAL VIDEO -->
+
+    <section
+      class="card"
+      id="finalSection"
+      hidden
+    >
+
+      <h2>
+        ✅ Final MP4
+      </h2>
+
+      <video
+        id="finalVideo"
+        controls
+        playsinline
+      ></video>
+
+      <a
+        id="downloadButton"
+        class="downloadButton"
+        download="movie-recap-ai.mp4"
+      >
+        ⬇️ Download MP4
+      </a>
+
+    </section>
+
+
+  </main>
+
+
+  <!-- JAVASCRIPT -->
+
+  <script src="script.js?v=4"></script>
+
+</body>
+
+</html>
